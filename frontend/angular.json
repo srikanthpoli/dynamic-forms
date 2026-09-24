@@ -27,6 +27,11 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "bmo-blue-on-transparent-en.svg",
+                "input": ".",
+                "output": "/"
               }
             ],
             "styles": [

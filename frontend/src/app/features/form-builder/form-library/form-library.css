@@ -17,7 +17,9 @@ h2 { color: #071f35; font-size: 1.1rem; margin: 7px 0 0; }
 .arrow { color: #0079c8 !important; font-size: 1.3rem !important; margin-left: auto; }
 .inline-history { border-left: 2px solid #0079c8; margin: 0 0 14px 15px; padding: 2px 0 2px 12px; }
 .history-heading { align-items: center; color: #60788a; display: flex; font-size: .68rem; font-weight: 800; justify-content: space-between; letter-spacing: .08em; margin-bottom: 8px; text-transform: uppercase; }
+.history-heading-actions { align-items: center; display: flex; gap: 7px; }
 .history-heading span:last-child { color: #0079c8; }
+.history-toggle { align-items: center; background: transparent; border: 0; color: #0079c8; cursor: pointer; display: inline-flex; font-size: .9rem; font-weight: 800; height: 20px; justify-content: center; line-height: 1; padding: 0; width: 20px; }
 .version-row { align-items: center; background: #f7fafb; border: 1px solid #e4ebf0; cursor: pointer; display: flex; gap: 7px; margin-bottom: 6px; padding: 8px 9px; text-align: left; width: 100%; }
 .version-row:hover, .version-row.selected { background: #e7f5fb; border-color: #0079c8; }
 .version-number { color: #17364d; font-size: .72rem; font-weight: 700; }
@@ -25,4 +27,7 @@ h2 { color: #071f35; font-size: 1.1rem; margin: 7px 0 0; }
 .version-status.published { background: #e8f5ef; color: #087443; }
 .version-fields { color: #60788a; font-size: .66rem; margin-left: auto; }
 .history-empty { color: #60788a; font-size: .72rem; margin: 4px 0 10px; }
+.history-collapsed { align-items: center; background: #fbfdfe; border: 0; border-left: 2px solid #0079c8; color: #60788a; cursor: pointer; display: flex; font-size: .68rem; font-weight: 800; justify-content: space-between; letter-spacing: .08em; margin: 0 0 14px 15px; padding: 8px 12px; text-align: left; text-transform: uppercase; width: calc(100% - 15px); }
+.history-collapsed span:nth-child(2) { color: #0079c8; margin-left: auto; margin-right: 8px; }
+.history-collapsed span:last-child { color: #0079c8; font-size: .9rem; font-weight: 800; }
 .empty { color: #60788a; font-size: .82rem; line-height: 1.5; margin: 22px 0 4px; }

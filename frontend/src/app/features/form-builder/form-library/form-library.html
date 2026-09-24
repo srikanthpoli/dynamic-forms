@@ -4,14 +4,20 @@
     <div class="library-list">
       @for (form of forms; track form.id) {
         <div class="form-entry" [class.selected]="selectedFormId === form.id">
-          <button class="library-item" type="button" (click)="formSelected.emit(form)">
+          <button class="library-item" type="button" (click)="selectForm(form)">
             <span class="mini-icon">F</span>
             <span class="field-copy"><strong>{{ form.title }}</strong><span>{{ form.description || 'No description' }}</span></span>
             <span class="arrow">›</span>
           </button>
-          @if (selectedFormId === form.id) {
+          @if (selectedFormId === form.id && historyExpanded) {
             <div class="inline-history">
-              <div class="history-heading"><span>Version history</span><span>{{ versions.length }}</span></div>
+              <div class="history-heading">
+                <span>Version history</span>
+                <span class="history-heading-actions">
+                  <span>{{ versions.length }}</span>
+                  <button class="history-toggle" type="button" (click)="toggleHistory()" aria-label="Collapse version history">^</button>
+                </span>
+              </div>
               @if (versions.length) {
                 @for (version of versions; track version.id) {
                   <button class="version-row" [class.selected]="selectedVersionId === version.id" type="button" (click)="versionSelected.emit(version)">
@@ -24,6 +30,10 @@
                 <p class="history-empty">No versions saved yet.</p>
               }
             </div>
+          } @else if (selectedFormId === form.id) {
+            <button class="history-collapsed" type="button" (click)="toggleHistory()">
+              <span>Version history</span><span>{{ versions.length }}</span><span class="history-chevron" aria-hidden="true">&gt;</span>
+            </button>
           }
         </div>
       }

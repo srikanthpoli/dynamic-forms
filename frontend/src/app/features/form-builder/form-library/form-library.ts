@@ -17,4 +17,15 @@ export class FormLibraryComponent {
   @Input() selectedVersionId: string | null = null;
   @Output() readonly formSelected = new EventEmitter<FormDefinition>();
   @Output() readonly versionSelected = new EventEmitter<FormVersion>();
+
+  historyExpanded = true;
+
+  toggleHistory(): void {
+    this.historyExpanded = !this.historyExpanded;
+  }
+
+  selectForm(form: FormDefinition): void {
+    this.historyExpanded = true;
+    this.formSelected.emit(form);
+  }
 }
