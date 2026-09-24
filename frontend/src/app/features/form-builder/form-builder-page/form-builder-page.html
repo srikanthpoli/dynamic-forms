@@ -4,18 +4,27 @@
     <aside class="library-column">
       <details class="library-collapse" open>
         <summary>Form library ({{ forms.length }})</summary>
-        <app-form-library [forms]="forms" [versions]="versions" [selectedFormId]="currentFormId" [selectedVersionId]="selectedVersion?.id ?? null" (formSelected)="selectForm($event)" (versionSelected)="selectVersion($event)"></app-form-library>
+        <app-form-library [forms]="forms" [versions]="versions" [selectedFormId]="currentFormId" [selectedVersionId]="selectedVersion?.id ?? null" (formSelected)="selectForm($event)" (versionSelected)="selectVersion($event)" (versionDeleted)="requestDeleteVersion($event)"></app-form-library>
       </details>
       <details class="library-collapse">
         <summary>Field library ({{ fields.length }})</summary>
-        <app-field-library [fields]="fields" (fieldSelected)="noop()" (fieldDeleted)="noop()"></app-field-library>
+        <app-field-library [fields]="fields" [readOnly]="true" (fieldSelected)="noop()" (fieldEditRequested)="editField($event)"></app-field-library>
       </details>
     </aside>
     <div class="workspace-column">
       @if (showBuilderAgent) {
         <app-form-prompt-panel [messages]="messages" [isSending]="isLoading" (promptSubmitted)="generate($event)" (newSessionRequested)="startNewSession()"></app-form-prompt-panel>
       }
-      <app-form-preview [form]="draft" [isLoading]="isLoading" [isSaving]="isSaving" [isPublishing]="!!publishingVersionId" [error]="error" [hasGenerated]="!!draft" [isEditing]="isEditing" [selectedVersion]="selectedVersion" [versionBump]="versionBump" (versionBumpChange)="setVersionBump($event)" (saveRequested)="save()" (publishRequested)="publishSelectedVersion()" (newVersionRequested)="createNewVersion()"></app-form-preview>
+      <app-form-preview [form]="draft" [isLoading]="isLoading" [isSaving]="isSaving" [isPublishing]="!!publishingVersionId" [error]="error" [hasGenerated]="!!draft" [isEditing]="isEditing" [selectedVersion]="selectedVersion" [versionBump]="versionBump" (versionBumpChange)="setVersionBump($event)" (layoutChanged)="draft = $event" (saveRequested)="save()" (publishRequested)="publishSelectedVersion()" (newVersionRequested)="createNewVersion()"></app-form-preview>
     </div>
   </div>
 </main>
+@if (versionPendingDeletion) {
+  <div class="modal-backdrop" role="presentation" (click)="cancelDeleteVersion()">
+    <section class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="delete-version-title" (click)="$event.stopPropagation()">
+      <div class="modal-icon">!</div>
+      <div class="modal-copy"><span class="modal-eyebrow">Remove version</span><h2 id="delete-version-title">Delete v{{ versionPendingDeletion.version_number }}?</h2><p>This {{ versionPendingDeletion.status }} version will be removed from the form history.</p></div>
+      <div class="modal-actions"><button class="cancel-button" type="button" [disabled]="isDeletingVersion" (click)="cancelDeleteVersion()">Cancel</button><button class="delete-button" type="button" [disabled]="isDeletingVersion" (click)="confirmDeleteVersion()">{{ isDeletingVersion ? 'Deleting...' : 'Delete version' }}</button></div>
+    </section>
+  </div>
+}

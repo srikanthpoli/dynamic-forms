@@ -20,6 +20,11 @@ from app.llm.provider import get_chat_model
 
 logger = logging.getLogger(__name__)
 
+MISSING_FIELD_MESSAGE = (
+    "Some fields requested for this form are not available in the field library yet. "
+    "Please build the needed fields using Field Builder first, then return here to add them to the form."
+)
+
 
 class FormBuilderState(TypedDict):
     prompt: str
@@ -74,13 +79,11 @@ def _arrange_layout(state: FormBuilderState) -> FormBuilderState:
         f"CURRENT FORM: {json.dumps(state['form_definition'])}\n"
         f"CURRENT LAYOUT: {json.dumps(state['layout_tree'])}\n\n"
         "If the request needs a field or capability that is not represented by an AVAILABLE "
-        "TEMPLATE, do not invent it and do not alter the current layout. Put its concise name "
-        "in missing_fields and set assistant_message to: 'That field is not available in the "
-        "field library yet. Please build the needed field using Field Builder first, then return "
-        "here to add it to the form.'\n"
+        "TEMPLATE, do not invent it and do not alter the current layout. Set missing_fields to "
+        "true and use a generic assistant_message without naming any specific field.\n"
         'Return STRICT JSON only: {"title": "...", "description": "...", '
         '"layout": [{"field_id": "...", "order": 0, "column_span": 12}, ...], '
-        '"missing_fields": [], "assistant_message": "..."}'
+        '"missing_fields": false, "assistant_message": "..."}'
     ))
 
     response = llm.invoke([
@@ -90,15 +93,13 @@ def _arrange_layout(state: FormBuilderState) -> FormBuilderState:
     ])
     parsed = _parse_json(response.content)
     if isinstance(parsed, dict):
-        missing_fields = parsed.get("missing_fields") or []
+        missing_fields = parsed.get("missing_fields")
         state["assistant_message"] = parsed.get("assistant_message") or ""
-        if missing_fields:
-            state["assistant_message"] = (
-                "That field is not available in the field library yet. Please build the needed "
-                "field using Field Builder first, then return here to add it to the form."
-            )
+        layout = parsed.get("layout")
+        if missing_fields is True or (isinstance(missing_fields, list) and missing_fields) or not isinstance(layout, list):
+            state["assistant_message"] = MISSING_FIELD_MESSAGE
         else:
-            state["layout_tree"] = parsed.get("layout", [])
+            state["layout_tree"] = layout
             state["form_definition"] = {
                 "title": parsed.get("title") or state["form_definition"].get("title", "Untitled Form"),
                 "description": parsed.get("description") or state["form_definition"].get("description"),

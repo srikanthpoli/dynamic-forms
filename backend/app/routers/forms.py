@@ -39,12 +39,13 @@ def _field_template_json(template: FieldTemplate) -> dict:
         "field_type": template.field_type,
         "angular_config": template.angular_config,
         "validation_rules": template.validation_rules,
+        "validation_messages": template.validation_messages,
         "api_config": template.api_config,
     }
 
 
 def _enrich_layout_tree(layout_tree: list[dict], db: Session) -> list[dict]:
-    field_ids = {node.get("field_id") for node in layout_tree if node.get("field_id")}
+    field_ids = {node.get("field_id") for node in layout_tree if node.get("field_id") and not node.get("field")}
     if not field_ids:
         return layout_tree
 
@@ -52,6 +53,9 @@ def _enrich_layout_tree(layout_tree: list[dict], db: Session) -> list[dict]:
     templates_by_id = {str(template.id): template for template in templates}
     enriched = []
     for node in layout_tree:
+        if node.get("field"):
+            enriched.append(node)
+            continue
         field_id = node.get("field_id")
         enriched.append({
             **node,
@@ -59,6 +63,37 @@ def _enrich_layout_tree(layout_tree: list[dict], db: Session) -> list[dict]:
             if field_id in templates_by_id else None,
         })
     return enriched
+
+
+def _snapshot_layout_tree(layout_tree: list[dict], db: Session) -> list[dict]:
+    """Store each form node with the complete field definition used at save time."""
+    field_ids = {node.get("field_id") for node in layout_tree if node.get("field_id") and not node.get("field")}
+    templates = db.query(FieldTemplate).filter(FieldTemplate.id.in_(field_ids)).all() if field_ids else []
+    templates_by_id = {str(template.id): template for template in templates}
+    snapshots = []
+    for node in layout_tree:
+        field = node.get("field")
+        if not field and node.get("field_id") in templates_by_id:
+            field = _field_template_json(templates_by_id[node["field_id"]])
+        if not field:
+            raise HTTPException(status_code=422, detail="Every form field must include a complete field definition")
+        snapshots.append({
+            "order": node.get("order", len(snapshots)),
+            "column_span": node.get("column_span"),
+            "field": field,
+        })
+    return snapshots
+
+
+def _agent_layout_tree(layout_tree: list[dict]) -> list[dict]:
+    """Add temporary field IDs for the layout agent without persisting them."""
+    return [
+        {
+            **node,
+            "field_id": node.get("field_id") or (node.get("field") or {}).get("id"),
+        }
+        for node in layout_tree
+    ]
 
 
 def _published_form_result(version: FormVersion, definition: FormDefinition, db: Session) -> dict:
@@ -214,7 +249,7 @@ def build_form(payload: FormBuildRequest, db: Session = Depends(get_db)):
             payload.prompt,
             db,
             session["messages"],
-            session["layout_tree"],
+            _agent_layout_tree(session["layout_tree"]),
             session["form_definition"],
         )
     except Exception:
@@ -222,16 +257,20 @@ def build_form(payload: FormBuildRequest, db: Session = Depends(get_db)):
         raise
     session["messages"] = result["messages"]
     session["layout_tree"] = result["layout_tree"]
-    session["form_definition"] = result["form_definition"]
+    form_definition = result.get("form_definition") or session["form_definition"]
+    form_definition.setdefault("title", "Untitled Form")
+    form_definition.setdefault("description", None)
+    form_definition.setdefault("layout_tree", session["layout_tree"])
+    session["form_definition"] = form_definition
     save_form_session(payload.session_id, session)
     logger.info(
         "POST /api/forms/build completed session_id=%s layout_nodes=%d",
         payload.session_id,
-        len(result["layout_tree"]),
+        len(session["layout_tree"]),
     )
     response_definition = {
-        **result["form_definition"],
-        "layout_tree": _enrich_layout_tree(result["form_definition"]["layout_tree"], db),
+        **form_definition,
+        "layout_tree": _enrich_layout_tree(form_definition["layout_tree"], db),
     }
     return FormBuildResponse(
         session_id=payload.session_id,
@@ -354,7 +393,7 @@ def save_form_definition_version(
         form_id=form_uuid,
         version_number=version_number,
         status="draft",
-        layout_tree=layout_tree,
+        layout_tree=_snapshot_layout_tree(layout_tree, db),
     )
     db.add(version)
     try:
@@ -387,7 +426,7 @@ def create_form_version(form_id: str, payload: FormVersionCreate, db: Session = 
         form_id=form_uuid,
         version_number=version_number,
         status="draft",
-        layout_tree=[node.model_dump() for node in payload.layout_tree],
+        layout_tree=_snapshot_layout_tree([node.model_dump() for node in payload.layout_tree], db),
     )
     db.add(version)
     try:
@@ -424,7 +463,7 @@ def update_form_draft(
     if version.status != "draft":
         raise HTTPException(status_code=409, detail="Published form versions cannot be edited")
 
-    version.layout_tree = layout_tree
+    version.layout_tree = _snapshot_layout_tree(layout_tree, db)
     db.commit()
     db.refresh(version)
     logger.info("Updated draft form_id=%s version=%s version_id=%s", form_id, version_number, version.id)
@@ -441,3 +480,21 @@ def publish_form_version(form_id: str, version_id: str, db: Session = Depends(ge
     db.commit()
     logger.info("POST /api/forms/%s/versions/%s/publish completed", form_id, version_id)
     return {"status": "published", "version_id": version_id}
+
+
+@router.delete("/{form_id}/versions/{version_id}")
+def delete_form_version(form_id: str, version_id: str, db: Session = Depends(get_db)):
+    version = (
+        db.query(FormVersion)
+        .filter(FormVersion.form_id == uuid.UUID(form_id), FormVersion.id == uuid.UUID(version_id))
+        .first()
+    )
+    if not version:
+        raise HTTPException(status_code=404, detail="Form version not found")
+    if db.query(FormSubmission.id).filter(FormSubmission.version_id == version.id).first():
+        raise HTTPException(status_code=409, detail="This version cannot be deleted because it has submissions")
+
+    db.delete(version)
+    db.commit()
+    logger.info("DELETE /api/forms/%s/versions/%s completed", form_id, version_id)
+    return {"status": "deleted", "version_id": version_id}

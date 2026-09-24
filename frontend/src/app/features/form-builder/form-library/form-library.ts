@@ -17,6 +17,7 @@ export class FormLibraryComponent {
   @Input() selectedVersionId: string | null = null;
   @Output() readonly formSelected = new EventEmitter<FormDefinition>();
   @Output() readonly versionSelected = new EventEmitter<FormVersion>();
+  @Output() readonly versionDeleted = new EventEmitter<FormVersion>();
 
   historyExpanded = true;
 

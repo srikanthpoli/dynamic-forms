@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { finalize, timeout } from 'rxjs';
 import { FieldBuilderApiService } from '../../../core/services/field-builder-api.service';
 import { FieldTemplate } from '../../../core/models/field.models';
@@ -17,6 +18,7 @@ import { FieldLibraryComponent } from '../field-library/field-library';
 export class FieldBuilderPageComponent implements OnInit {
   private readonly api = inject(FieldBuilderApiService);
   private readonly changeDetector = inject(ChangeDetectorRef);
+  private readonly route = inject(ActivatedRoute);
   sessionId = `field-${crypto.randomUUID()}`;
   fields: FieldTemplate[] = [];
   messages: { role: 'user' | 'agent'; text: string }[] = [];
@@ -27,8 +29,15 @@ export class FieldBuilderPageComponent implements OnInit {
   error = '';
   fieldPendingDeletion: FieldTemplate | null = null;
   isDeleting = false;
+  private requestedFieldId: string | null = null;
 
-  ngOnInit(): void { this.loadLibrary(); }
+  ngOnInit(): void {
+    this.route.queryParamMap.subscribe(params => {
+      this.requestedFieldId = params.get('fieldId');
+      this.selectRequestedField();
+    });
+    this.loadLibrary();
+  }
 
   selectField(field: FieldTemplate): void {
     this.sessionId = `field-edit-${crypto.randomUUID()}`;
@@ -140,6 +149,7 @@ export class FieldBuilderPageComponent implements OnInit {
     this.api.listFields().subscribe({
       next: fields => {
         this.fields = fields;
+        this.selectRequestedField();
         this.changeDetector.markForCheck();
       },
       error: () => {
@@ -147,5 +157,14 @@ export class FieldBuilderPageComponent implements OnInit {
         this.changeDetector.markForCheck();
       },
     });
+  }
+
+  private selectRequestedField(): void {
+    if (!this.requestedFieldId) return;
+    const field = this.fields.find(item => item.id === this.requestedFieldId);
+    if (field) {
+      this.selectField(field);
+      this.requestedFieldId = null;
+    }
   }
 }

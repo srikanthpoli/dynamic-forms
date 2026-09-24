@@ -20,11 +20,14 @@
               </div>
               @if (versions.length) {
                 @for (version of versions; track version.id) {
-                  <button class="version-row" [class.selected]="selectedVersionId === version.id" type="button" (click)="versionSelected.emit(version)">
-                    <span class="version-number">v{{ version.version_number }}</span>
-                    <span class="version-status" [class.published]="version.status === 'published'">{{ version.status }}</span>
-                    <span class="version-fields">{{ version.layout_tree.length }} field{{ version.layout_tree.length === 1 ? '' : 's' }}</span>
-                  </button>
+                  <div class="version-row" [class.selected]="selectedVersionId === version.id">
+                    <button class="version-select" type="button" (click)="versionSelected.emit(version)">
+                      <span class="version-number">v{{ version.version_number }}</span>
+                      <span class="version-status" [class.published]="version.status === 'published'">{{ version.status }}</span>
+                      <span class="version-fields">{{ version.layout_tree.length }} field{{ version.layout_tree.length === 1 ? '' : 's' }}</span>
+                    </button>
+                    <button class="version-delete" type="button" [attr.aria-label]="'Delete version ' + version.version_number" (click)="$event.stopPropagation(); versionDeleted.emit(version)">×</button>
+                  </div>
                 }
               } @else {
                 <p class="history-empty">No versions saved yet.</p>

@@ -18,13 +18,27 @@
     </div>
 
     <form class="actual-form">
-      <div class="fields-preview">
-        @for (node of sortedLayout; track node.field_id) {
-          <div class="field-slot" [style.grid-column]="'span ' + (node.column_span || 12)">
+      <div class="grid-toolbar">
+        <span>Form layout</span>
+        <small>{{ canEditLayout ? 'Drag fields to reorder and adjust their width.' : selectedVersion?.status === 'published' ? 'Published versions are read-only.' : 'Preview mode: layout editing is off.' }}</small>
+        <mat-checkbox class="layout-edit-checkbox" [checked]="layoutEditMode" [disabled]="selectedVersion?.status === 'published'" (change)="setLayoutEditMode($event.checked)">Edit layout</mat-checkbox>
+      </div>
+      <div class="fields-preview" cdkDropList [cdkDropListDisabled]="!canEditLayout" (cdkDropListDropped)="onDrop($event)">
+        @for (node of sortedLayout; track fieldKey(node, $index)) {
+          <div class="field-slot" cdkDrag [cdkDragDisabled]="!canEditLayout" [style.grid-column]="'span ' + (node.column_span || 12)">
+            @if (canEditLayout) {
+              <div class="field-tools">
+                <span class="drag-handle" cdkDragHandle aria-label="Drag field">⋮⋮</span>
+                <span class="width-label">Drag the right edge to resize</span>
+              </div>
+            }
             @if (node.field) {
-              <app-field-live-preview [field]="node.field" [compact]="true" (validityChange)="onFieldValidityChange(node.field_id, $event)"></app-field-live-preview>
+              <app-field-live-preview [field]="node.field" [compact]="true" (validityChange)="onFieldValidityChange(fieldKey(node, $index), $event)"></app-field-live-preview>
             } @else {
-              <div class="missing-field">Unknown field ({{ node.field_id }})</div>
+              <div class="missing-field">Unknown field</div>
+            }
+            @if (canEditLayout) {
+              <span class="resize-handle" role="separator" tabindex="0" aria-label="Resize field" (pointerdown)="startResize($event, fieldKey(node, $index))"></span>
             }
           </div>
         }
@@ -35,9 +49,6 @@
         <span class="submit-hint">{{ isFormValid ? 'All fields are valid.' : 'Complete all required fields to submit.' }}</span>
       </div>
     </form>
-
-    <details><summary>View generated JSON</summary><pre>{{ form | json }}</pre></details>
-    <app-form-code-preview [form]="form"></app-form-code-preview>
 
     <div class="version-bump-row">
       <span class="version-bump-label">Version bump</span>
@@ -58,6 +69,9 @@
         Create new version
       </button>
     </div>
+
+    <details><summary>View generated JSON</summary><pre>{{ form | json }}</pre></details>
+    <app-form-code-preview [form]="form"></app-form-code-preview>
   } @else {
     <div class="empty-state"><div class="empty-mark">+</div><h3>Your generated form will appear here</h3><p>Use the chat panel to describe a form built from your published field templates.</p></div>
   }

@@ -6,9 +6,12 @@ h2 { color: #071f35; font-size: 1.1rem; margin: 7px 0 0; }
 .count { color: #0079c8; font-size: 1.25rem; font-weight: 800; }
 .library-list { margin-top: 20px; }
 .library-item { align-items: center; border-top: 1px solid #e4ebf0; display: flex; gap: 4px; padding: 7px 0 7px 0; }.field-select { align-items: center; background: transparent; border: 0; color: inherit; cursor: pointer; display: flex; flex: 1; gap: 11px; min-width: 0; padding: 6px 0; text-align: left; }.field-select:hover .field-copy strong { color: #0079c8; }.delete-field { align-items: center; background: transparent; border: 0; border-radius: 50%; color: #7b8c98; cursor: pointer; display: flex; font-size: 1.25rem; height: 28px; justify-content: center; width: 28px; }.delete-field:hover { background: #fff1f3; color: #ed1b2f; }
+.edit-field { align-items: center; background: transparent; border: 0; color: #0079c8; cursor: pointer; display: flex; font-size: .78rem; height: 24px; justify-content: center; line-height: 1; margin-left: 2px; padding: 0; position: relative; top: 1px; width: 24px; }
+.edit-field:hover { background: #0079c8; color: #fff; }
 .mini-icon { align-items: center; background: #e7f5fb; color: #0079c8; display: flex; font-size: .75rem; font-weight: 800; height: 30px; justify-content: center; width: 30px; }
 .field-copy { display: grid; gap: 3px; }
 .library-item strong { color: #17364d; font-size: .86rem; }
 .library-item span { color: #60788a; font-size: .72rem; }
 .arrow { color: #0079c8 !important; font-size: 1.3rem !important; margin-left: auto; }
 .empty { color: #60788a; font-size: .82rem; line-height: 1.5; margin: 22px 0 4px; }
+.field-details { border-bottom: 1px solid #e4ebf0; padding: 0 0 9px 41px; }.field-details summary { color: #0079c8; cursor: pointer; font-size: .7rem; font-weight: 700; }.details-grid { display: grid; gap: 5px 9px; grid-template-columns: auto 1fr; margin-top: 8px; }.details-grid span { color: #60788a; font-size: .68rem; }.details-grid strong { color: #17364d; font-size: .68rem; font-weight: 600; overflow-wrap: anywhere; }

@@ -20,12 +20,15 @@ h2 { color: #071f35; font-size: 1.1rem; margin: 7px 0 0; }
 .history-heading-actions { align-items: center; display: flex; gap: 7px; }
 .history-heading span:last-child { color: #0079c8; }
 .history-toggle { align-items: center; background: transparent; border: 0; color: #0079c8; cursor: pointer; display: inline-flex; font-size: .9rem; font-weight: 800; height: 20px; justify-content: center; line-height: 1; padding: 0; width: 20px; }
-.version-row { align-items: center; background: #f7fafb; border: 1px solid #e4ebf0; cursor: pointer; display: flex; gap: 7px; margin-bottom: 6px; padding: 8px 9px; text-align: left; width: 100%; }
+.version-row { align-items: center; background: #f7fafb; border: 1px solid #e4ebf0; display: flex; gap: 4px; margin-bottom: 6px; padding: 0 5px 0 9px; width: 100%; }
 .version-row:hover, .version-row.selected { background: #e7f5fb; border-color: #0079c8; }
+.version-select { align-items: center; background: transparent; border: 0; cursor: pointer; display: flex; flex: 1; gap: 7px; min-height: 32px; padding: 0; text-align: left; }
 .version-number { color: #17364d; font-size: .72rem; font-weight: 700; }
 .version-status { background: #e7f5fb; color: #60788a; font-size: .58rem; font-weight: 800; letter-spacing: .04em; padding: 3px 5px; text-transform: uppercase; }
 .version-status.published { background: #e8f5ef; color: #087443; }
 .version-fields { color: #60788a; font-size: .66rem; margin-left: auto; }
+.version-delete { background: transparent; border: 0; color: #7b8c98; cursor: pointer; font-size: 1rem; line-height: 1; padding: 5px; }
+.version-delete:hover { color: #ed1b2f; }
 .history-empty { color: #60788a; font-size: .72rem; margin: 4px 0 10px; }
 .history-collapsed { align-items: center; background: #fbfdfe; border: 0; border-left: 2px solid #0079c8; color: #60788a; cursor: pointer; display: flex; font-size: .68rem; font-weight: 800; justify-content: space-between; letter-spacing: .08em; margin: 0 0 14px 15px; padding: 8px 12px; text-align: left; text-transform: uppercase; width: calc(100% - 15px); }
 .history-collapsed span:nth-child(2) { color: #0079c8; margin-left: auto; margin-right: 8px; }

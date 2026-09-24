@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { finalize, timeout } from 'rxjs';
 import { FormBuilderApiService } from '../../../core/services/form-builder-api.service';
 import { FieldBuilderApiService } from '../../../core/services/field-builder-api.service';
@@ -22,6 +23,7 @@ export class FormBuilderPageComponent implements OnInit {
   private readonly api = inject(FormBuilderApiService);
   private readonly fieldApi = inject(FieldBuilderApiService);
   private readonly changeDetector = inject(ChangeDetectorRef);
+  private readonly router = inject(Router);
 
   sessionId = `form-${crypto.randomUUID()}`;
   forms: FormDefinition[] = [];
@@ -39,6 +41,8 @@ export class FormBuilderPageComponent implements OnInit {
   selectedVersion: FormVersion | null = null;
   publishingVersionId: string | null = null;
   versionBump: 'major' | 'minor' | 'patch' = 'patch';
+  versionPendingDeletion: FormVersion | null = null;
+  isDeletingVersion = false;
 
   get showBuilderAgent(): boolean {
     return !this.currentFormId || this.selectedVersion?.status === 'draft';
@@ -77,6 +81,10 @@ export class FormBuilderPageComponent implements OnInit {
 
   noop(): void {
     // Field library is shown for reference only on this page.
+  }
+
+  editField(field: FieldTemplate): void {
+    if (field.id) this.router.navigate(['/'], { queryParams: { fieldId: field.id } });
   }
 
   setVersionBump(bump: 'major' | 'minor' | 'patch'): void {
@@ -186,6 +194,38 @@ export class FormBuilderPageComponent implements OnInit {
     }
   }
 
+  requestDeleteVersion(version: FormVersion): void {
+    this.versionPendingDeletion = version;
+  }
+
+  cancelDeleteVersion(): void {
+    if (!this.isDeletingVersion) this.versionPendingDeletion = null;
+  }
+
+  confirmDeleteVersion(): void {
+    if (!this.currentFormId || !this.versionPendingDeletion) return;
+    const version = this.versionPendingDeletion;
+    this.isDeletingVersion = true;
+    this.api.deleteVersion(this.currentFormId, version.id).pipe(
+      timeout(30000),
+      finalize(() => {
+        this.isDeletingVersion = false;
+        this.changeDetector.markForCheck();
+      }),
+    ).subscribe({
+      next: () => {
+        this.versionPendingDeletion = null;
+        if (this.selectedVersion?.id === version.id) this.selectedVersion = null;
+        this.loadVersions();
+      },
+      error: (err: HttpErrorResponse) => {
+        this.error = err.error?.detail ?? 'This version could not be deleted.';
+        this.versionPendingDeletion = null;
+        this.changeDetector.markForCheck();
+      },
+    });
+  }
+
   selectVersion(version: FormVersion): void {
     this.selectedVersion = version;
     this.draft = {
@@ -207,6 +247,7 @@ export class FormBuilderPageComponent implements OnInit {
     ).subscribe({
       next: response => {
         this.loadVersions(selectCreatedVersion ? response.version_id : undefined);
+        this.loadLibrary();
       },
       error: (err: HttpErrorResponse) => {
         this.error = err.status === 409
@@ -285,7 +326,7 @@ export class FormBuilderPageComponent implements OnInit {
   private hydrateLayout(layoutTree: FormVersion['layout_tree']): FormDefinitionJson['layout_tree'] {
     return layoutTree.map(node => ({
       ...node,
-      field: this.fields.find(field => field.id === node.field_id) ?? null,
+      field: node.field ?? this.fields.find(field => field.id === node.field_id) ?? null,
     }));
   }
 }

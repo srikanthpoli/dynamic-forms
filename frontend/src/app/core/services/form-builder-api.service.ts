@@ -53,6 +53,12 @@ export class FormBuilderApiService {
     );
   }
 
+  deleteVersion(formId: string, versionId: string): Observable<{ status: string; version_id: string }> {
+    return this.http.delete<{ status: string; version_id: string }>(
+      `${this.baseUrl}/forms/${formId}/versions/${versionId}`,
+    );
+  }
+
   listPublishedForms(): Observable<PublishedForm[]> {
     return this.http.get<PublishedForm[]>(`${this.baseUrl}/forms/published`);
   }

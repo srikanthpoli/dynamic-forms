@@ -1,7 +1,7 @@
 import { FieldTemplate } from './field.models';
 
 export interface FormLayoutNode {
-  field_id: string;
+  field_id?: string;
   order: number;
   column_span?: number | null;
   field?: FieldTemplate | null;
