@@ -1,0 +1,13 @@
+<header class="topbar">
+  <a class="brand" routerLink="/">
+    <span class="brand-mark">B</span>
+    <span><strong>BMO</strong><small>Form Studio</small></span>
+  </a>
+  <nav>
+    <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Field builder</a>
+    <a routerLink="/forms" routerLinkActive="active">Form builder</a>
+    <a routerLink="/">Published library</a>
+  </nav>
+  <button class="profile" type="button">SR</button>
+</header>
+<router-outlet></router-outlet>

@@ -1,0 +1,80 @@
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatRadioModule } from '@angular/material/radio';
+import { MatSelectModule } from '@angular/material/select';
+import { FieldTemplate } from '../../../core/models/field.models';
+import { buildFieldValidators, getConfiguredValidationMessages, getValidationMessage } from '../../../core/validation/field-validation';
+
+@Component({
+  selector: 'app-field-live-preview',
+  standalone: true,
+  imports: [FormsModule, ReactiveFormsModule, MatCheckboxModule, MatFormFieldModule, MatInputModule, MatRadioModule, MatSelectModule],
+  templateUrl: './field-live-preview.html',
+  styleUrl: './field-live-preview.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class FieldLivePreviewComponent implements OnInit, OnChanges {
+  @Input() field: FieldTemplate | null = null;
+  /** Hides the standalone "Field Preview" label and rule tiles when embedded inside a real form. */
+  @Input() compact = false;
+  @Output() readonly validityChange = new EventEmitter<boolean>();
+
+  value = '';
+  checked = false;
+  selected = '';
+  previewControl = new FormControl<string | boolean>('', { nonNullable: true });
+
+  ngOnInit(): void {
+    this.previewControl.statusChanges.subscribe(() => this.emitValidity());
+    this.previewControl.valueChanges.subscribe(() => this.emitValidity());
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['field']) {
+      this.previewControl = new FormControl<string | boolean>('', { nonNullable: true, validators: buildFieldValidators(this.field?.validation_rules ?? {}) });
+      this.previewControl.statusChanges.subscribe(() => this.emitValidity());
+      this.previewControl.valueChanges.subscribe(() => this.emitValidity());
+      this.emitValidity();
+    }
+  }
+
+  private emitValidity(): void {
+    this.validityChange.emit(this.previewControl.valid);
+  }
+
+  get isValid(): boolean { return this.previewControl.valid && this.previewControl.touched; }
+
+  get validationMessage(): string {
+    return getValidationMessage(this.previewControl, this.field?.validation_messages ?? {});
+  }
+
+  get validationMessages(): string[] {
+    return getConfiguredValidationMessages(
+      this.field?.validation_rules ?? {},
+      this.field?.validation_messages ?? {},
+      this.field?.label ?? 'This field',
+    );
+  }
+
+  get options(): string[] {
+    const options = (this.field as FieldTemplate & { options?: unknown[] })?.options;
+    return Array.isArray(options) ? options.map(String) : ['Option one', 'Option two', 'Option three'];
+  }
+
+  get inputType(): string {
+    return this.field?.validation_rules?.['email'] ? 'email' : 'text';
+  }
+
+  get required(): boolean {
+    return Boolean(this.field?.validation_rules?.['required']);
+  }
+
+  get maxLength(): number | null {
+    const value = this.field?.validation_rules?.['maxlength'];
+    return typeof value === 'number' ? value : null;
+  }
+}

@@ -1,0 +1,14 @@
+:host { display: block; }
+.code-panel { border-top: 1px solid #dce7ed; margin-top: 24px; padding-top: 0; }
+.code-panel > summary { color: #0079c8; cursor: pointer; font-size: .85rem; font-weight: 700; padding: 14px 0 12px; }
+.code-panel > summary::marker { color: #0079c8; }
+.code-content { padding-top: 14px; }
+.code-heading { align-items: flex-start; display: flex; gap: 16px; justify-content: space-between; }
+.eyebrow, .code-label { color: #0079c8; font-size: .68rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.code-heading h3 { color: #071f35; font-size: 1.05rem; margin: 6px 0 0; }
+.code-badge { background: #e8f5ef; color: #087443; font-size: .68rem; font-weight: 700; padding: 6px 8px; white-space: nowrap; }
+.code-intro { color: #60788a; font-size: .8rem; line-height: 1.5; margin: 9px 0 18px; }
+.code-block { margin-top: 15px; }
+.code-label { color: #60788a; margin-bottom: 7px; }
+.code-block pre { background: #071f35; color: #e7f5fb; font-family: 'DM Mono', Consolas, monospace; font-size: .73rem; line-height: 1.55; margin: 0; max-height: 220px; overflow: auto; padding: 14px; white-space: pre-wrap; }
+.code-block.compact pre { max-height: none; }

@@ -1,0 +1,89 @@
+{
+  "framework": "Angular Material",
+  "angular_material_version": "latest",
+  "supported_fields": [
+    {
+      "type": "text",
+      "angular_tag": "mat-form-field",
+      "inner_element": "input",
+      "module": "MatInputModule",
+      "allowed_inputs": [
+        "matInput"
+      ],
+      "allowed_outputs": [],
+      "allowed_validations": [
+        "required",
+        "minlength",
+        "maxlength",
+        "pattern"
+      ],
+      "required_options": [
+        "placeholder"
+      ],
+      "documentation_url": "https://material.angular.dev/components/input/overview"
+    },
+    {
+      "type": "autocomplete",
+      "angular_tag": "mat-form-field",
+      "inner_element": "mat-autocomplete",
+      "module": "MatAutocompleteModule",
+      "allowed_inputs": [
+        "matInput",
+        "formControl",
+        "matAutocomplete"
+      ],
+      "allowed_outputs": [
+        "optionSelected"
+      ],
+      "allowed_validations": [
+        "required"
+      ],
+      "required_options": [
+        "options"
+      ],
+      "documentation_url": "https://material.angular.dev/components/autocomplete/overview"
+    },
+    {
+      "type": "select",
+      "angular_tag": "mat-form-field",
+      "inner_element": "mat-select",
+      "module": "MatSelectModule",
+      "allowed_inputs": [
+        "formControl",
+        "multiple"
+      ],
+      "allowed_outputs": [
+        "selectionChange"
+      ],
+      "allowed_validations": [
+        "required"
+      ],
+      "required_options": [
+        "options"
+      ],
+      "documentation_url": "https://material.angular.dev/components/select/overview"
+    },
+    {
+      "type": "checkbox",
+      "angular_tag": "mat-checkbox",
+      "inner_element": "mat-checkbox",
+      "module": "MatCheckboxModule",
+      "allowed_inputs": [
+        "formControl",
+        "checked"
+      ],
+      "allowed_outputs": [
+        "change"
+      ],
+      "allowed_validations": [
+        "required"
+      ],
+      "required_options": [
+        "label"
+      ],
+      "documentation_url": "https://material.angular.dev/components/checkbox/overview"
+    }
+  ],
+  "generated_at": "2026-09-23T17:20:56.952975+00:00",
+  "documentation_source": "official Angular Material documentation"
+}

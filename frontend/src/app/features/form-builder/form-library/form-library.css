@@ -1,0 +1,28 @@
+:host { display: block; }
+.library-panel { background: #fff; border: 1px solid #d7e0e7; padding: 22px; }
+.section-heading { align-items: flex-start; display: flex; justify-content: space-between; }
+.eyebrow { color: #0079c8; font-size: .7rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+h2 { color: #071f35; font-size: 1.1rem; margin: 7px 0 0; }
+.count { color: #0079c8; font-size: 1.25rem; font-weight: 800; }
+.library-list { margin-top: 20px; }
+.form-entry { border-top: 1px solid #e4ebf0; }
+.form-entry.selected { background: #fbfdfe; }
+.library-item { align-items: center; background: transparent; border: 0; border-top: 1px solid #e4ebf0; color: inherit; cursor: pointer; display: flex; gap: 11px; padding: 13px 0; text-align: left; width: 100%; }
+.form-entry > .library-item { border-top: 0; }
+.library-item:hover .field-copy strong { color: #0079c8; }
+.mini-icon { align-items: center; background: #e7f5fb; color: #0079c8; display: flex; font-size: .75rem; font-weight: 800; height: 30px; justify-content: center; width: 30px; }
+.field-copy { display: grid; gap: 3px; }
+.library-item strong { color: #17364d; font-size: .86rem; }
+.library-item span { color: #60788a; font-size: .72rem; }
+.arrow { color: #0079c8 !important; font-size: 1.3rem !important; margin-left: auto; }
+.inline-history { border-left: 2px solid #0079c8; margin: 0 0 14px 15px; padding: 2px 0 2px 12px; }
+.history-heading { align-items: center; color: #60788a; display: flex; font-size: .68rem; font-weight: 800; justify-content: space-between; letter-spacing: .08em; margin-bottom: 8px; text-transform: uppercase; }
+.history-heading span:last-child { color: #0079c8; }
+.version-row { align-items: center; background: #f7fafb; border: 1px solid #e4ebf0; cursor: pointer; display: flex; gap: 7px; margin-bottom: 6px; padding: 8px 9px; text-align: left; width: 100%; }
+.version-row:hover, .version-row.selected { background: #e7f5fb; border-color: #0079c8; }
+.version-number { color: #17364d; font-size: .72rem; font-weight: 700; }
+.version-status { background: #e7f5fb; color: #60788a; font-size: .58rem; font-weight: 800; letter-spacing: .04em; padding: 3px 5px; text-transform: uppercase; }
+.version-status.published { background: #e8f5ef; color: #087443; }
+.version-fields { color: #60788a; font-size: .66rem; margin-left: auto; }
+.history-empty { color: #60788a; font-size: .72rem; margin: 4px 0 10px; }
+.empty { color: #60788a; font-size: .82rem; line-height: 1.5; margin: 22px 0 4px; }

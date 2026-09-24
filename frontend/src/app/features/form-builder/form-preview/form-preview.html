@@ -1,0 +1,64 @@
+<section class="preview-panel">
+  <div class="panel-heading">
+    <div>
+      <div class="eyebrow">Working draft</div>
+      <h2>Form definition</h2>
+    </div>
+    <span class="state" [class.ready]="hasGenerated">{{ isLoading ? 'Generating' : hasGenerated ? 'Ready to review' : 'Waiting for prompt' }}</span>
+  </div>
+
+  @if (isLoading) {
+    <div class="loading-block"><span class="loader"></span><p>Assembling the form from your published field library...</p></div>
+  } @else if (error) {
+    <div class="error-block">{{ error }}</div>
+  } @else if (form) {
+    <div class="form-hero">
+      <div class="form-icon">{{ form.title.slice(0, 1).toUpperCase() }}</div>
+      <div><span class="type-label">{{ sortedLayout.length }} field{{ sortedLayout.length === 1 ? '' : 's' }}</span><h3>{{ form.title }}</h3><p>{{ form.description }}</p></div>
+    </div>
+
+    <form class="actual-form">
+      <div class="fields-preview">
+        @for (node of sortedLayout; track node.field_id) {
+          <div class="field-slot" [style.grid-column]="'span ' + (node.column_span || 12)">
+            @if (node.field) {
+              <app-field-live-preview [field]="node.field" [compact]="true" (validityChange)="onFieldValidityChange(node.field_id, $event)"></app-field-live-preview>
+            } @else {
+              <div class="missing-field">Unknown field ({{ node.field_id }})</div>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="submit-row">
+        <button mat-flat-button color="primary" type="button" [disabled]="!isFormValid" (click)="formSubmitted.emit()">Submit form</button>
+        <span class="submit-hint">{{ isFormValid ? 'All fields are valid.' : 'Complete all required fields to submit.' }}</span>
+      </div>
+    </form>
+
+    <details><summary>View generated JSON</summary><pre>{{ form | json }}</pre></details>
+    <app-form-code-preview [form]="form"></app-form-code-preview>
+
+    <div class="version-bump-row">
+      <span class="version-bump-label">Version bump</span>
+      <mat-button-toggle-group [value]="versionBump" (change)="versionBumpChange.emit($event.value)" aria-label="Version bump type">
+        <mat-button-toggle value="patch">Patch</mat-button-toggle>
+        <mat-button-toggle value="minor">Minor</mat-button-toggle>
+        <mat-button-toggle value="major">Major</mat-button-toggle>
+      </mat-button-toggle-group>
+    </div>
+    <div class="version-actions" role="tablist" aria-label="Version actions">
+      <button class="action-tab" [class.active]="activeAction === 'save'" [disabled]="isSaving || isPublishing" type="button" role="tab" (click)="selectAction('save')">
+        {{ isSaving ? 'Saving...' : 'Save' }}
+      </button>
+      <button class="action-tab publish-tab" [class.active]="activeAction === 'publish'" [disabled]="!selectedVersion || selectedVersion.status !== 'draft' || isSaving || isPublishing" type="button" role="tab" (click)="selectAction('publish')">
+        {{ isPublishing ? 'Publishing...' : 'Publish' }}
+      </button>
+      <button class="action-tab new-version-tab" [class.active]="activeAction === 'new-version'" [disabled]="isSaving || isPublishing" type="button" role="tab" (click)="selectAction('new-version')">
+        Create new version
+      </button>
+    </div>
+  } @else {
+    <div class="empty-state"><div class="empty-mark">+</div><h3>Your generated form will appear here</h3><p>Use the chat panel to describe a form built from your published field templates.</p></div>
+  }
+</section>

@@ -1,0 +1,13 @@
+:host { display: block; }
+.versions-panel { background: #fff; border: 1px solid #d7e0e7; padding: 22px; }
+.section-heading { margin-bottom: 16px; }
+.eyebrow { color: #0079c8; font-size: .7rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+h2 { color: #071f35; font-size: 1.05rem; margin: 7px 0 0; }
+.versions-list { display: grid; gap: 10px; }
+.version-row { align-items: center; background: #f7fafb; border: 1px solid #e4ebf0; cursor: pointer; display: flex; gap: 12px; padding: 12px 14px; text-align: left; width: 100%; }
+.version-row:hover, .version-row.selected { background: #e7f5fb; border-color: #0079c8; }
+.version-number { color: #17364d; font-size: .85rem; font-weight: 700; }
+.version-status { background: #e7f5fb; color: #60788a; font-size: .68rem; font-weight: 800; letter-spacing: .05em; padding: 4px 8px; text-transform: uppercase; }
+.version-status.published { background: #e8f5ef; color: #087443; }
+.version-fields { color: #60788a; font-size: .78rem; margin-right: auto; }
+.empty { color: #60788a; font-size: .82rem; line-height: 1.5; margin: 0; }

@@ -1,0 +1,48 @@
+@if (!compact) {
+  <div class="preview-label"><span class="preview-dot"></span>Field Preview</div>
+  @if (validationMessages.length) {
+    <div class="validation-requirements">
+      <span class="requirements-label">Validation Rules ({{ validationMessages.length }})</span>
+      <div class="requirements-list">
+        @for (message of validationMessages; track message) {
+          <span class="requirement"><span class="requirement-check">✓</span>{{ message }}</span>
+        }
+      </div>
+    </div>
+  }
+}
+<section class="live-preview" [class.compact]="compact" aria-label="Field preview">
+  @if (field) {
+    @switch (field.field_type) {
+      @case ('select') {
+        <mat-form-field appearance="fill" class="control">
+          <mat-label>{{ field.label }}</mat-label>
+          <mat-select [formControl]="previewControl">
+            @for (option of options; track option) { <mat-option [value]="option">{{ option }}</mat-option> }
+          </mat-select>
+          @if (previewControl.invalid && previewControl.touched) { <mat-error>{{ validationMessage }}</mat-error> }
+        </mat-form-field>
+      }
+      @case ('checkbox') {
+        <mat-checkbox [formControl]="previewControl">{{ field.label }}</mat-checkbox>
+        @if (previewControl.invalid && previewControl.touched) { <div class="inline-error">{{ validationMessage }}</div> }
+      }
+      @case ('radio') {
+        <div class="radio-control"><span class="control-label">{{ field.label }}</span><mat-radio-group [formControl]="previewControl"><mat-radio-button value="yes">Yes</mat-radio-button><mat-radio-button value="no">No</mat-radio-button></mat-radio-group></div>
+        @if (previewControl.invalid && previewControl.touched) { <div class="inline-error">{{ validationMessage }}</div> }
+      }
+      @default {
+        <mat-form-field appearance="fill" class="control">
+          <mat-label>{{ field.label }}</mat-label>
+          <input matInput [type]="inputType" [formControl]="previewControl" [placeholder]="field.label" />
+          @if (previewControl.invalid && previewControl.touched) { <mat-error>{{ validationMessage }}</mat-error> }
+        </mat-form-field>
+      }
+    }
+  }
+</section>
+@if (!compact) {
+  <div class="validation-status" [class.valid]="isValid" [class.invalid]="!isValid" aria-live="polite">
+    <span class="status-dot"></span><strong>{{ isValid ? 'Valid' : 'Needs attention' }}</strong><span>{{ validationMessage }}</span>
+  </div>
+}

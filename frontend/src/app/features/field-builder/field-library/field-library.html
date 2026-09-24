@@ -1,0 +1,4 @@
+<section class="library-panel">
+  <div class="section-heading"><div><div class="eyebrow">Field library</div><h2>Published templates</h2></div><span class="count">{{ fields.length | number: '2.0' }}</span></div>
+  @if (fields.length) { <div class="library-list">@for (field of fields; track field.id) { <div class="library-item"><button class="field-select" type="button" (click)="fieldSelected.emit(field)"><span class="mini-icon">{{ field.field_type.slice(0, 1).toUpperCase() }}</span><span class="field-copy"><strong>{{ field.label }}</strong><span>{{ field.field_type }} · {{ field.name }}</span></span><span class="arrow">›</span></button><button class="delete-field" type="button" [attr.aria-label]="'Delete ' + field.label" (click)="fieldDeleted.emit(field)">×</button></div> }</div> } @else { <p class="empty">Published fields will collect here as your library grows.</p> }
+</section>

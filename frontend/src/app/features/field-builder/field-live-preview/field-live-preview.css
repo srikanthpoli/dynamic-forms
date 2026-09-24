@@ -1,0 +1,11 @@
+:host { display: block; }
+.preview-label { align-items: center; color: #0079c8; display: flex; font-size: .72rem; font-weight: 800; gap: 8px; letter-spacing: .1em; margin-bottom: 10px; text-transform: uppercase; }
+.preview-dot { background: #12a66a; border-radius: 50%; box-shadow: 0 0 0 4px #e3f6ee; height: 7px; width: 7px; }
+.live-preview { background: #f7fafb; border: 1px solid #dce7ed; padding: 22px 20px 10px; }
+.live-preview.compact { background: transparent; border: 0; padding: 0; }
+.control { --mdc-filled-text-field-container-color: #e9eef8; --mdc-filled-text-field-focus-active-indicator-color: #006ac6; --mdc-filled-text-field-hover-active-indicator-color: #006ac6; }
+.control { width: 100%; }
+.radio-control { display: grid; gap: 13px; padding: 8px 0 20px; }.control-label { color: #243f53; font-size: .95rem; font-weight: 600; }.radio-control mat-radio-button + mat-radio-button { margin-left: 22px; }
+.inline-error { color: #a80f2c; font-size: .75rem; margin-top: -12px; padding-bottom: 8px; }
+.validation-status { align-items: center; background: #fff1f3; border: 1px solid #f3c4cd; color: #a80f2c; display: flex; font-size: .74rem; gap: 7px; margin: 10px 0 2px; padding: 9px 11px; }.validation-status.valid { background: #e8f5ef; border-color: #b9e4cf; color: #087443; }.status-dot { background: currentColor; border-radius: 50%; height: 7px; width: 7px; }.validation-status span:last-child { color: inherit; font-weight: 500; }
+.validation-requirements { border-top: 1px solid #dce7ed; display: grid; gap: 9px; margin: 0 0 12px; padding: 12px 2px 2px; }.requirements-label { color: #60788a; font-size: .68rem; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }.requirements-list { display: flex; flex-wrap: wrap; gap: 7px; }.requirement { align-items: flex-start; background: #e7f5fb; border: 1px solid #cce4ef; color: #29465b; display: flex; font-size: .75rem; gap: 7px; line-height: 1.4; padding: 8px 10px; }.requirement-check { color: #0079c8; font-weight: 800; }

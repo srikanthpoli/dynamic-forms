@@ -1,0 +1,9 @@
+<section class="chat-panel">
+  <div class="chat-heading"><div><div class="eyebrow">Field Builder Agent</div><h2>Shape the field together</h2></div><span class="agent-status"><span></span> Online</span></div>
+  <div class="chat-history" aria-live="polite">
+    @if (!messages.length) { <div class="welcome"><div class="welcome-mark">✦</div><strong>What are we building?</strong><p>Describe the field in plain language. I’ll turn it into an Angular Material definition you can review.</p></div> }
+    @for (message of messages; track $index) { <div class="message" [ngClass]="message.role"><span class="message-avatar">{{ message.role === 'user' ? 'You' : 'AI' }}</span><p>{{ message.text }}</p></div> }
+  </div>
+  <div class="prompt-input"><label for="field-prompt">Your request</label><textarea id="field-prompt" [(ngModel)]="prompt" rows="3" [disabled]="isSending" placeholder="Example: Create a required email field with a maximum length of 120 characters." (keydown.enter)="handleEnter($event)"></textarea><span class="input-hint">{{ isSending ? 'Waiting for the agent...' : 'Enter to send · Shift + Enter for a new line' }}</span></div>
+  <div class="prompt-footer"><span>Same session · refine this draft anytime</span><div class="prompt-actions"><button class="new-session" type="button" (click)="newSessionRequested.emit()">New session</button><button mat-flat-button color="primary" type="button" [disabled]="isSending" (click)="submit()">{{ isSending ? 'Waiting...' : 'Send request' }}</button></div></div>
+</section>

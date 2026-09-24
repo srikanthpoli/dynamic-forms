@@ -1,0 +1,13 @@
+<main class="builder-page">
+  <section class="page-intro"><div><span class="breadcrumb">Workspace / Field builder</span><h1>Build fields that feel right.</h1><p>Turn a business requirement into a reusable Angular Material field definition, then keep refining it before it enters the library.</p></div><div class="agent-badge"><span class="pulse"></span> Agent online</div></section>
+  <div class="builder-grid"><aside class="library-column"><app-field-library [fields]="fields" (fieldSelected)="selectField($event)" (fieldDeleted)="deleteField($event)"></app-field-library></aside><div class="workspace-column"><app-field-prompt-panel [messages]="messages" [isSending]="isLoading" (promptSubmitted)="generate($event)" (newSessionRequested)="startNewSession()"></app-field-prompt-panel><app-field-preview [field]="draft" [isLoading]="isLoading" [isSaving]="isSaving" [error]="error" [hasGenerated]="!!draft" [isEditing]="isEditing" (publishRequested)="publish()"></app-field-preview></div></div>
+</main>
+@if (fieldPendingDeletion) {
+  <div class="modal-backdrop" role="presentation" (click)="cancelDelete()">
+    <section class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="delete-title" (click)="$event.stopPropagation()">
+      <div class="modal-icon">!</div>
+      <div class="modal-copy"><span class="modal-eyebrow">Remove template</span><h2 id="delete-title">Delete {{ fieldPendingDeletion.label }}?</h2><p>This removes the published field definition from the library. Existing form versions are not changed.</p></div>
+      <div class="modal-actions"><button class="cancel-button" type="button" [disabled]="isDeleting" (click)="cancelDelete()">Cancel</button><button class="delete-button" type="button" [disabled]="isDeleting" (click)="confirmDelete()">{{ isDeleting ? 'Deleting...' : 'Delete field' }}</button></div>
+    </section>
+  </div>
+}

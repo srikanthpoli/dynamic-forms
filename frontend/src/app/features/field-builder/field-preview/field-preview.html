@@ -1,0 +1,32 @@
+<section class="preview-panel">
+  <div class="panel-heading">
+    <div>
+      <div class="eyebrow">Working draft</div>
+      <h2>Field definition</h2>
+    </div>
+    <span class="state" [class.ready]="hasGenerated">{{ isLoading ? 'Generating' : hasGenerated ? 'Ready to review' : 'Waiting for prompt' }}</span>
+  </div>
+
+  @if (isLoading) {
+    <div class="loading-block"><span class="loader"></span><p>Reading capabilities and shaping the field...</p></div>
+  } @else if (error) {
+    <div class="error-block">{{ error }}</div>
+  } @else if (field) {
+    <div class="field-hero">
+      <div class="field-icon">{{ field.field_type.slice(0, 1).toUpperCase() }}</div>
+      <div><span class="type-label">{{ field.field_type }}</span><h3>{{ field.label }}</h3><p>{{ field.name }}</p></div>
+    </div>
+
+    <div class="definition-grid">
+      <div><span>Angular control</span><strong>{{ field.angular_config['inner_element'] || 'Configured component' }}</strong></div>
+    </div>
+
+    <app-field-live-preview [field]="field"></app-field-live-preview>
+
+    <details><summary>View generated JSON</summary><pre>{{ field | json }}</pre></details>
+    <app-field-code-preview [field]="field"></app-field-code-preview>
+    <button mat-flat-button color="primary" [disabled]="isSaving" type="button" (click)="publishRequested.emit()">{{ isSaving ? 'Publishing...' : isEditing ? 'Republish changes' : 'Publish to library' }}</button>
+  } @else {
+    <div class="empty-state"><div class="empty-mark">+</div><h3>Your generated field will appear here</h3><p>Use the prompt panel to create a field grounded in the Angular Material capability registry.</p></div>
+  }
+</section>
