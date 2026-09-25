@@ -2,6 +2,7 @@
 .env
 .env.*
 backend/.env_aws
+frontend/dynamic-forms-ui.zip
 !.env.example
 *.pem
 *.key
