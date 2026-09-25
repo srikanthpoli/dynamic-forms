@@ -10,6 +10,124 @@ Browser -> Nginx on EC2 -> Angular frontend
 
 Do not commit `.env`, private keys, passwords, or API keys.
 
+## Refresh an existing AWS deployment
+
+Use this section when the EC2 instance, backend service, Nginx, and database are already set up. This refreshes code only; it does not recreate AWS resources.
+
+### 1. Pull latest backend code on EC2
+
+From Windows PowerShell, connect to EC2:
+
+```powershell
+ssh -i "C:\Users\sripo\Downloads\dynamicforms_aws.pem" ubuntu@18.209.45.74
+```
+
+On EC2:
+
+```bash
+cd ~/dynamic-forms
+git pull origin master
+```
+
+### 2. Refresh backend dependencies and restart FastAPI
+
+```bash
+cd ~/dynamic-forms/backend
+source "$HOME/.local/bin/env"
+source .venv/bin/activate
+uv sync
+
+sudo systemctl restart dynamic-forms-api
+sudo systemctl status dynamic-forms-api
+```
+
+Backend health check:
+
+```bash
+curl http://127.0.0.1:8000/health
+```
+
+Expected:
+
+```json
+{"status":"ok"}
+```
+
+If the backend fails:
+
+```bash
+sudo journalctl -u dynamic-forms-api -n 100 --no-pager
+```
+
+### 3. Build the frontend locally
+
+On Windows PowerShell:
+
+```powershell
+cd "E:\Srikanth\Srikanth\Learning\Dynamic_Forms\frontend"
+npm install
+npm run build
+
+Compress-Archive `
+  -Path ".\dist\dynamic-forms-frontend\browser\*" `
+  -DestinationPath ".\dynamic-forms-ui.zip" `
+  -Force
+```
+
+Upload the built frontend to EC2:
+
+```powershell
+scp -i "C:\Users\sripo\Downloads\dynamicforms_aws.pem" `
+  ".\dynamic-forms-ui.zip" `
+  ubuntu@18.209.45.74:/tmp/dynamic-forms-ui.zip
+```
+
+### 4. Replace frontend files on EC2 and restart Nginx
+
+On EC2:
+
+```bash
+rm -rf /tmp/dynamic-forms-ui-new
+mkdir -p /tmp/dynamic-forms-ui-new
+unzip -q /tmp/dynamic-forms-ui.zip -d /tmp/dynamic-forms-ui-new
+
+sudo rm -rf /var/www/dynamic-forms/*
+sudo cp -r /tmp/dynamic-forms-ui-new/* /var/www/dynamic-forms/
+
+sudo nginx -t
+sudo systemctl restart nginx
+```
+
+### 5. Verify refreshed deployment
+
+On EC2:
+
+```bash
+curl http://127.0.0.1:8000/health
+curl http://127.0.0.1/api/forms/published
+```
+
+From browser:
+
+```text
+http://18.209.45.74/
+```
+
+Use a hard refresh after frontend replacement:
+
+```text
+Ctrl + Shift + R
+```
+
+If Nginx fails:
+
+```bash
+sudo nginx -t
+sudo tail -n 80 /var/log/nginx/error.log
+```
+
+## First-time deployment
+
 ## 1. AWS resources
 
 Create or verify:

@@ -13,10 +13,10 @@
     <div class="form-unavailable"><strong>No matching published form found</strong><p>Would you like me to list the available forms, or build a new form for this request?</p><div class="form-unavailable-actions"><a routerLink="/library">List Published Forms</a><a routerLink="/forms">Build a New Form</a></div></div>
   }
   @if (error) { <div class="assist-error">{{ error }}</div> }
-  <textarea [(ngModel)]="prompt" rows="3" [disabled]="!isContextLoaded || isSending || !!pendingForm" placeholder="Ask about this implementation request..." (keydown.enter)="handleEnter($event)"></textarea>
+  <textarea [(ngModel)]="prompt" rows="3" [disabled]="!isContextLoaded || isSending || (allowFormAssignment && !!pendingForm)" placeholder="Ask about this implementation request..." (keydown.enter)="handleEnter($event)"></textarea>
   <div class="assist-actions">
-    <button class="new-button" type="button" [disabled]="isSending || !!pendingForm" (click)="newSession()">New</button>
-    <button class="load-button" type="button" [disabled]="!ir || isContextLoaded || !!pendingForm" (click)="loadContext()">{{ isContextLoaded ? 'Context loaded' : 'Load IR context' }}</button>
-    <button class="send-button" type="button" [disabled]="!isContextLoaded || isSending || !!pendingForm || !prompt.trim()" (click)="send()">{{ isSending ? 'Thinking...' : 'Send' }}</button>
+    <button class="new-button" type="button" [disabled]="isSending || (allowFormAssignment && !!pendingForm)" (click)="newSession()">New</button>
+    <button class="load-button" type="button" [disabled]="!ir || isContextLoaded || (allowFormAssignment && !!pendingForm)" (click)="loadContext()">{{ isContextLoaded ? 'Context loaded' : 'Load IR context' }}</button>
+    <button class="send-button" type="button" [disabled]="!isContextLoaded || isSending || (allowFormAssignment && !!pendingForm) || !prompt.trim()" (click)="send()">{{ isSending ? 'Thinking...' : 'Send' }}</button>
   </div>
 </aside>

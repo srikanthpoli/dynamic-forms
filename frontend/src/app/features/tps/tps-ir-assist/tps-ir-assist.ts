@@ -63,7 +63,7 @@ export class TpsIrAssistComponent implements OnChanges {
   }
 
   send(): void {
-    if (!this.ir || !this.isContextLoaded || this.isSending || this.pendingForm || !this.prompt.trim()) return;
+    if (!this.ir || !this.isContextLoaded || this.isSending || (this.allowFormAssignment && this.pendingForm) || !this.prompt.trim()) return;
     const prompt = this.prompt.trim();
     this.prompt = '';
     this.messages = [...this.messages, { role: 'user', text: prompt }];
@@ -79,7 +79,7 @@ export class TpsIrAssistComponent implements OnChanges {
         this.messages = [...this.messages, { role: 'assistant', text: response.assistant_message }];
         this.showFormTools = response.show_form_tools === true;
         this.publishedForms = response.published_forms ?? [];
-        this.pendingForm = response.pending_form ?? null;
+        this.pendingForm = this.allowFormAssignment ? response.pending_form ?? null : null;
         this.formUnavailable = this.showFormTools && !this.publishedForms.length && !this.pendingForm;
         this.isSending = false;
         this.changeDetector.markForCheck();
