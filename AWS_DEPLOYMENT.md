@@ -68,7 +68,7 @@ free -h
 
 ```bash
 sudo apt update
-sudo apt install -y curl git nginx python3-venv python3.12 python3.12-venv postgresql-client unzip build-essential
+sudo apt install -y curl git nginx python3 python3-venv postgresql-client unzip build-essential
 ```
 
 Install `uv`:
@@ -131,7 +131,7 @@ Never put real values in this documentation or Git.
 cd ~/dynamic-forms/backend
 rm -rf .venv
 uv cache clean
-uv venv --python 3.12
+uv venv --python 3
 source .venv/bin/activate
 uv sync
 ```
