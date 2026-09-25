@@ -30,11 +30,3 @@ CREATE TABLE form_versions (
     UNIQUE(form_id, version_number)
 );
 
--- 4. Form Submissions Store
-CREATE TABLE form_submissions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    form_id UUID REFERENCES form_definitions(id),
-    version_id UUID REFERENCES form_versions(id),
-    submission_data JSONB NOT NULL,
-    submitted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);

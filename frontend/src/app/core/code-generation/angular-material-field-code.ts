@@ -1,8 +1,9 @@
 import { FieldTemplate } from '../models/field.models';
+import { CONTROL_MODULES, ControlKind, resolveControlKind } from '../capabilities/control-registry';
 
 type FieldCodeRenderer = (field: FieldTemplate, controlName: string) => string;
 
-const renderers: Record<string, FieldCodeRenderer> = {
+const kindRenderers: Partial<Record<ControlKind, FieldCodeRenderer>> = {
   select: (field, control) => `<mat-form-field appearance="fill">\n  <mat-label>${field.label}</mat-label>\n  <mat-select formControlName="${control}">\n    @for (option of ${control}Options; track option.value) {\n      <mat-option [value]="option.value">{{ option.label }}</mat-option>\n    }\n  </mat-select>\n</mat-form-field>`,
   checkbox: (field, control) => `<mat-checkbox formControlName="${control}">${field.label}</mat-checkbox>`,
   radio: (field, control) => `<mat-radio-group formControlName="${control}">\n  @for (option of ${control}Options; track option.value) {\n    <mat-radio-button [value]="option.value">{{ option.label }}</mat-radio-button>\n  }\n</mat-radio-group>`,
@@ -10,7 +11,7 @@ const renderers: Record<string, FieldCodeRenderer> = {
 };
 
 export function generateAngularMaterialTemplate(field: FieldTemplate, controlName: string): string {
-  const renderer = renderers[field.field_type];
+  const renderer = kindRenderers[resolveControlKind(field.field_type)];
   if (renderer) return renderer(field, controlName);
 
   const inputType = field.validation_rules?.['email'] ? 'email' : field.field_type || 'text';
@@ -30,12 +31,6 @@ export function generateAngularMaterialTemplate(field: FieldTemplate, controlNam
 
 export function getAngularMaterialImports(field: FieldTemplate): string {
   const modules = new Set(['ReactiveFormsModule']);
-  const moduleByType: Record<string, string[]> = {
-    checkbox: ['MatCheckboxModule'],
-    select: ['MatFormFieldModule', 'MatSelectModule'],
-    radio: ['MatRadioModule'],
-    autocomplete: ['MatFormFieldModule', 'MatInputModule', 'MatAutocompleteModule'],
-  };
-  for (const module of moduleByType[field.field_type] ?? ['MatFormFieldModule', 'MatInputModule']) modules.add(module);
+  for (const module of CONTROL_MODULES[resolveControlKind(field.field_type)]) modules.add(module);
   return `imports: [${Array.from(modules).join(', ')}]`;
 }

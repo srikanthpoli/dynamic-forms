@@ -18,6 +18,11 @@ export class FormPromptPanelComponent {
   @Output() readonly newSessionRequested = new EventEmitter<void>();
 
   prompt = 'Build a customer registration form using the available full name and email fields.';
+  isMinimized = false;
+
+  toggleMinimized(): void {
+    this.isMinimized = !this.isMinimized;
+  }
 
   submit(): void {
     if (this.isSending) return;

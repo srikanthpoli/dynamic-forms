@@ -32,12 +32,14 @@ h2 { color: #071f35; font-size: 1.45rem; margin: 7px 0 0; }
 details { border-top: 1px solid #e4ebf0; margin-bottom: 22px; padding-top: 14px; }
 summary { color: #0079c8; cursor: pointer; font-size: .85rem; font-weight: 700; }
 pre { background: #071f35; color: #e7f5fb; font-size: .72rem; max-height: 210px; overflow: auto; padding: 16px; white-space: pre-wrap; }
-.version-actions { align-items: center; display: flex; flex-wrap: wrap; gap: 12px; margin-top: 6px; }
-.action-tab { background: #f7fafb; border: 1px solid #d7e0e7; color: #17364d; cursor: pointer; font-size: .8rem; font-weight: 700; min-height: 42px; padding: 0 18px; }
+.version-actions { align-items: center; display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+.action-tab { align-items: center; background: #fff; border: 1px solid #b9cbd6; border-radius: 999px; color: #17364d; cursor: pointer; display: inline-flex; font-size: .8rem; font-weight: 800; justify-content: center; min-height: 42px; min-width: 92px; padding: 0 18px; }
 .action-tab:hover:not(:disabled), .action-tab.active { background: #0079c8; border-color: #0079c8; color: #fff; }
 .action-tab:disabled { cursor: not-allowed; opacity: .48; }
+.publish-tab { border-color: #087443; color: #087443; }
 .publish-tab.active { background: #087443; border-color: #087443; }
-.new-version-tab { background: #fff; color: #0079c8; }
+.new-version-tab { border-color: #0079c8; color: #0079c8; min-width: 154px; }
+.new-version-tab.active { background: #0079c8; border-color: #0079c8; color: #fff; }
 .version-bump-row { align-items: center; display: flex; gap: 14px; margin: 6px 0 16px; }
 .version-bump-label { color: #60788a; font-size: .78rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
 .empty-state { align-items: center; color: #60788a; display: flex; flex-direction: column; justify-content: center; min-height: 330px; text-align: center; }

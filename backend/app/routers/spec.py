@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from app.capabilities.generator import OFFICIAL_DOCS, generate_capabilities
+from app.agents.session_store import clear_all_sessions
 from app.db.session import get_db
 from app.vectorstore.store import (
     build_or_refresh_index,
@@ -67,6 +68,13 @@ def refresh_all_indexes(db: Session = Depends(get_db)):
             "published_forms": form_count,
         },
     }
+
+
+@router.post("/clear-sessions")
+def clear_agent_sessions():
+    """Clear all in-memory Field Builder and Form Builder sessions."""
+    counts = clear_all_sessions()
+    return {"status": "success", **counts}
 
 
 @router.post("/generate-capabilities")

@@ -1,6 +1,13 @@
 :host { display: block; }
+.chat-launcher { align-items: center; background: #0079c8; border: 0; border-radius: 999px; box-shadow: 0 12px 28px rgba(7, 31, 53, .22); color: #fff; cursor: pointer; display: flex; font-size: .78rem; font-weight: 800; gap: 8px; min-height: 46px; padding: 0 16px; }
+.chat-launcher:hover { background: #0068ad; }
+.launcher-dot { background: #8ff0c2; border-radius: 50%; height: 8px; width: 8px; }
+.launcher-count { align-items: center; background: #ed1b2f; border-radius: 50%; display: flex; font-size: .62rem; height: 18px; justify-content: center; min-width: 18px; }
 .chat-panel { background: #fff; border: 1px solid #d7e0e7; border-top: 4px solid #0079c8; padding: 22px 24px 18px; }
 .chat-heading { align-items: flex-start; display: flex; justify-content: space-between; }
+.chat-heading-actions { align-items: center; display: flex; gap: 12px; }
+.minimize-button { align-items: center; background: #e7f5fb; border: 0; color: #0079c8; cursor: pointer; display: flex; font-size: 1.15rem; height: 28px; justify-content: center; width: 28px; }
+.minimize-button:hover { background: #ccecf8; }
 .eyebrow { color: #0079c8; font-size: .7rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
 .chat-heading h2 { color: #071f35; font-size: 1.35rem; margin: 7px 0 0; }
 .agent-status { align-items: center; color: #087443; display: flex; font-size: .72rem; font-weight: 700; gap: 7px; }

@@ -4,7 +4,7 @@ import { AdminApiService } from '../../../core/services/admin-api.service';
 import { IndexRefreshResponse } from '../../../core/services/admin-api.service';
 
 interface AdminAction {
-  key: 'capabilities' | 'fields' | 'forms' | 'all' | 'generate';
+  key: 'capabilities' | 'fields' | 'forms' | 'all' | 'generate' | 'sessions';
   title: string;
   description: string;
   action: string;
@@ -58,16 +58,43 @@ export class AdminPageComponent implements OnInit {
       action: 'Regenerate with LLM',
       tone: 'blue',
     },
+    {
+      key: 'sessions',
+      title: 'Agent sessions',
+      description: 'Clear in-memory Field Builder and Form Builder conversations and drafts.',
+      action: 'Clear sessions',
+      tone: 'red',
+    },
   ];
 
   runningKey: AdminAction['key'] | null = null;
   lastMessage = '';
   error = '';
+  showClearSessionsModal = false;
 
   ngOnInit(): void {}
 
   run(action: AdminAction): void {
     if (this.runningKey) return;
+    if (action.key === 'sessions') {
+      this.showClearSessionsModal = true;
+      this.changeDetector.markForCheck();
+      return;
+    }
+    this.execute(action);
+  }
+
+  cancelClearSessions(): void {
+    if (!this.runningKey) this.showClearSessionsModal = false;
+  }
+
+  confirmClearSessions(): void {
+    this.showClearSessionsModal = false;
+    const action = this.actions.find(item => item.key === 'sessions');
+    if (action) this.execute(action);
+  }
+
+  private execute(action: AdminAction): void {
     this.runningKey = action.key;
     this.lastMessage = '';
     this.error = '';
@@ -80,7 +107,12 @@ export class AdminPageComponent implements OnInit {
           ? this.api.refreshPublishedFormsIndex()
           : action.key === 'all'
             ? this.api.refreshAllIndexes()
-            : this.api.regenerateCapabilities().pipe(map(response => ({
+            : action.key === 'sessions'
+              ? this.api.clearSessions().pipe(map(response => ({
+                status: response.status,
+                documents_indexed: response.field_sessions + response.form_sessions + response.tps_ir_sessions,
+              })))
+              : this.api.regenerateCapabilities().pipe(map(response => ({
               status: response.status,
               documents_indexed: response.components.length,
             })));
@@ -101,6 +133,9 @@ export class AdminPageComponent implements OnInit {
   }
 
   private formatResponse(action: AdminAction, response: { documents_indexed?: number; indexes?: Record<string, number> }): string {
+    if (action.key === 'sessions') {
+      return `Agent sessions cleared: ${response.documents_indexed ?? 0} session(s).`;
+    }
     if (response.indexes) {
       return `All indexes refreshed: ${Object.entries(response.indexes).map(([name, count]) => `${name} (${count})`).join(', ')}.`;
     }

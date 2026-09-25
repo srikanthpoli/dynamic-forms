@@ -22,6 +22,7 @@ export class PublishedLibraryPageComponent implements OnInit {
 
   fields: FieldTemplate[] = [];
   forms: PublishedForm[] = [];
+  selectedField: FieldTemplate | null = null;
   selectedForm: PublishedForm | null = null;
   isLoading = true;
   error = '';
@@ -31,6 +32,7 @@ export class PublishedLibraryPageComponent implements OnInit {
       next: result => {
         this.fields = result.fields;
         this.forms = result.forms;
+        this.selectedField = this.fields[0] ?? null;
         this.selectedForm = this.forms[0] ?? null;
         this.isLoading = false;
         this.changeDetector.markForCheck();
@@ -45,6 +47,12 @@ export class PublishedLibraryPageComponent implements OnInit {
 
   selectForm(form: PublishedForm): void {
     this.selectedForm = form;
+    this.selectedField = null;
+  }
+
+  selectField(field: FieldTemplate): void {
+    this.selectedField = field;
+    this.selectedForm = null;
   }
 
   sortedLayout(form: PublishedForm): PublishedForm['layout_tree'] {

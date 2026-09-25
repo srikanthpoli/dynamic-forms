@@ -132,6 +132,14 @@ def _form_document(version: FormVersion, definition: FormDefinition) -> Document
             "version_id": str(version.id),
             "title": definition.title,
             "version_number": version.version_number,
+            "field_details": json.dumps([
+                {
+                    "name": field.get("name"),
+                    "label": field.get("label"),
+                    "validation_rules": field.get("validation_rules", {}),
+                }
+                for field in fields
+            ]),
         },
     )
 
@@ -143,6 +151,14 @@ def _replace_documents(store: Chroma, documents: list[Document], ids: list[str])
     if documents:
         store.add_documents(documents, ids=ids)
     return len(documents)
+
+
+def _upsert_document(store: Chroma, document: Document, document_id: str) -> None:
+    existing_ids = set(store.get()["ids"])
+    if document_id in existing_ids:
+        store.update_documents(ids=[document_id], documents=[document])
+    else:
+        store.add_documents(documents=[document], ids=[document_id])
 
 
 def refresh_published_fields_index(db: Session) -> int:
@@ -177,7 +193,7 @@ def refresh_published_forms_index(db: Session) -> int:
 def upsert_published_field(field: FieldTemplate) -> None:
     global _field_store
     store = _field_store or _get_store(get_settings(), FIELD_COLLECTION)
-    store.upsert(documents=[_field_document(field)], ids=[str(field.id)])
+    _upsert_document(store, _field_document(field), str(field.id))
     _field_store = store
 
 
@@ -192,7 +208,7 @@ def delete_published_field(field_id: str) -> None:
 def upsert_published_form(version: FormVersion, definition: FormDefinition) -> None:
     global _form_store
     store = _form_store or _get_store(get_settings(), FORM_COLLECTION)
-    store.upsert(documents=[_form_document(version, definition)], ids=[str(version.id)])
+    _upsert_document(store, _form_document(version, definition), str(version.id))
     _form_store = store
 
 
@@ -214,3 +230,14 @@ def get_published_form_retriever(k: int = 4):
     global _form_store
     _form_store = _form_store or _get_store(get_settings(), FORM_COLLECTION)
     return _form_store.as_retriever(search_kwargs={"k": k})
+
+
+def get_published_form_documents() -> list[Document]:
+    """Return every indexed published form document for explicit list requests."""
+    global _form_store
+    _form_store = _form_store or _get_store(get_settings(), FORM_COLLECTION)
+    records = _form_store.get(include=["documents", "metadatas"])
+    return [
+        Document(page_content=content or "", metadata=metadata or {})
+        for content, metadata in zip(records.get("documents", []), records.get("metadatas", []))
+    ]

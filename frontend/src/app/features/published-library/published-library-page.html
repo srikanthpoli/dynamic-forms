@@ -10,49 +10,51 @@
     <div class="error-block">{{ error }}</div>
   } @else {
     <div class="library-grid">
-      <section class="catalog-panel">
-        <div class="panel-heading"><div><span class="eyebrow">Field library</span><h2>Published fields</h2></div><strong>{{ fields.length }}</strong></div>
+      <aside class="library-sidebar">
+        <details class="library-collapse" open>
+          <summary><span>Field library</span><strong>{{ fields.length }}</strong></summary>
         @if (fields.length) {
-          <div class="field-list">
+          <div class="field-list library-scroll">
             @for (field of fields; track field.id) {
-              <article class="field-card">
-                <div class="card-heading"><div><strong>{{ field.label }}</strong><span>{{ field.field_type }} · {{ field.name }}</span></div><span class="published-badge">Published</span></div>
-                <app-field-live-preview [field]="field"></app-field-live-preview>
-              </article>
+              <button class="field-card" [class.selected]="selectedField?.id === field.id" type="button" (click)="selectField(field)"><span class="mini-icon">{{ field.field_type.slice(0, 1).toUpperCase() }}</span><span class="card-copy"><strong>{{ field.label }}</strong><span>{{ field.field_type }} · {{ field.name }}</span></span><span class="chevron">›</span></button>
             }
           </div>
         } @else {
           <p class="empty-state">No published fields are available yet.</p>
         }
-      </section>
-
-      <section class="catalog-panel forms-panel">
-        <div class="panel-heading"><div><span class="eyebrow">Form library</span><h2>Published forms</h2></div><strong>{{ forms.length }}</strong></div>
+        </details>
+        <details class="library-collapse" open>
+          <summary><span>Form library</span><strong>{{ forms.length }}</strong></summary>
         @if (forms.length) {
-          <div class="form-list">
+          <div class="form-list library-scroll">
             @for (form of forms; track form.version_id) {
               <button class="form-card" [class.selected]="selectedForm?.version_id === form.version_id" type="button" (click)="selectForm(form)">
                 <span class="form-mark">F</span><span class="form-copy"><strong>{{ form.title }}</strong><span>Version {{ form.version_number }} · {{ form.layout_tree.length }} fields</span></span><span class="chevron">›</span>
               </button>
             }
           </div>
-          @if (selectedForm) {
-            <div class="form-preview">
-              <div class="preview-heading"><div><span class="eyebrow">Live preview</span><h3>{{ selectedForm.title }}</h3><p>{{ selectedForm.description || 'Published form' }}</p></div><span class="version-badge">v{{ selectedForm.version_number }}</span></div>
-              <form class="actual-form">
-                <div class="fields-preview">
-                  @for (node of sortedLayout(selectedForm); track node.field_id) {
-                    @if (node.field) {
-                      <div class="field-slot" [style.grid-column]="'span ' + (node.column_span || 12)"><app-field-live-preview [field]="node.field" [compact]="true"></app-field-live-preview></div>
-                    }
-                  }
-                </div>
-                <button class="submit-button" type="button">Submit form</button>
-              </form>
-            </div>
-          }
         } @else {
           <p class="empty-state">No published forms are available yet.</p>
+        }
+        </details>
+      </aside>
+
+      <section class="preview-panel">
+        @if (selectedField) {
+          <div class="preview-heading"><div><span class="eyebrow">Field preview</span><h2>{{ selectedField.label }}</h2><p>{{ selectedField.field_type }} · {{ selectedField.name }}</p></div><span class="published-badge">Published</span></div>
+          <app-field-live-preview [field]="selectedField"></app-field-live-preview>
+        } @else if (selectedForm) {
+          <div class="preview-heading"><div><span class="eyebrow">Form preview</span><h2>{{ selectedForm.title }}</h2><p>{{ selectedForm.description || 'Published form' }}</p></div><span class="version-badge">v{{ selectedForm.version_number }}</span></div>
+          <form class="actual-form">
+            <div class="fields-preview">
+              @for (node of sortedLayout(selectedForm); track node.field_id) {
+                @if (node.field) { <div class="field-slot" [style.grid-column]="'span ' + (node.column_span || 12)"><app-field-live-preview [field]="node.field" [compact]="true"></app-field-live-preview></div> }
+              }
+            </div>
+            <button class="submit-button" type="button">Submit form</button>
+          </form>
+        } @else {
+          <div class="empty-state"><div class="empty-mark">+</div><h2>Select a published field or form</h2><p>Choose an item from the library to inspect its live preview.</p></div>
         }
       </section>
     </div>

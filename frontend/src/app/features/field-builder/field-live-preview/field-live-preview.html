@@ -13,7 +13,7 @@
 }
 <section class="live-preview" [class.compact]="compact" aria-label="Field preview">
   @if (field) {
-    @switch (field.field_type) {
+    @switch (controlKind) {
       @case ('select') {
         <mat-form-field appearance="fill" class="control">
           <mat-label>{{ field.label }}</mat-label>

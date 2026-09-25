@@ -1,0 +1,22 @@
+<aside class="assist-panel">
+  <div class="assist-heading"><div><span class="eyebrow">TPS IR Assist</span><h2>Work with this IR</h2></div><span class="assist-status"><span></span>Ready</span></div>
+  <div class="assist-history" aria-live="polite">
+    @if (!messages.length) { <div class="assist-welcome"><span class="assist-mark">AI</span><strong>Load IR context to begin</strong><p>The assistant will use this IR's details when answering your questions.</p></div> }
+    @for (message of messages; track $index) {
+      <div class="assist-message" [class.user]="message.role === 'user'" [class.system]="message.role === 'system'"><span>{{ message.role === 'user' ? 'You' : message.role === 'system' ? 'IR' : 'AI' }}</span><p [innerHTML]="formatMessage(message.text)"></p></div>
+    }
+  </div>
+  @if (pendingForm) {
+    <div class="confirmation-box"><p>Use <strong>{{ pendingForm.title }}</strong> version {{ pendingForm.version_number }} for this IR?</p><div><button class="cancel-button" type="button" [disabled]="isSending" (click)="cancelPendingForm()">Cancel</button><button class="confirm-button" type="button" [disabled]="isSending" (click)="confirmPendingForm()">{{ isSending ? 'Assigning...' : 'Confirm' }}</button></div></div>
+  }
+  @if (formUnavailable) {
+    <div class="form-unavailable"><strong>No matching published form found</strong><p>Would you like me to list the available forms, or build a new form for this request?</p><div class="form-unavailable-actions"><a routerLink="/library">List Published Forms</a><a routerLink="/forms">Build a New Form</a></div></div>
+  }
+  @if (error) { <div class="assist-error">{{ error }}</div> }
+  <textarea [(ngModel)]="prompt" rows="3" [disabled]="!isContextLoaded || isSending || !!pendingForm" placeholder="Ask about this implementation request..." (keydown.enter)="handleEnter($event)"></textarea>
+  <div class="assist-actions">
+    <button class="new-button" type="button" [disabled]="isSending || !!pendingForm" (click)="newSession()">New</button>
+    <button class="load-button" type="button" [disabled]="!ir || isContextLoaded || !!pendingForm" (click)="loadContext()">{{ isContextLoaded ? 'Context loaded' : 'Load IR context' }}</button>
+    <button class="send-button" type="button" [disabled]="!isContextLoaded || isSending || !!pendingForm || !prompt.trim()" (click)="send()">{{ isSending ? 'Thinking...' : 'Send' }}</button>
+  </div>
+</aside>

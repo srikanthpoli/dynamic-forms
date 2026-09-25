@@ -1,7 +1,9 @@
+import json
 import logging
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.agents.field_builder_agent import run_field_builder
@@ -57,6 +59,43 @@ def generate_field(payload: FieldGenerateRequest):
     )
 
 
+@router.post("/generate/stream")
+def generate_field_stream(payload: FieldGenerateRequest):
+    """Stream progress events, then return the final validated field result."""
+    def events():
+        yield _sse_event("status", {"message": "Searching Angular Material capability references..."})
+        session = get_session(payload.session_id)
+        try:
+            yield _sse_event("status", {"message": "Generating the field definition..."})
+            result = run_field_builder(payload.prompt, session["messages"], payload.field_context)
+            session["messages"] = result["messages"]
+            session["draft"] = result["draft"]
+            save_session(payload.session_id, session)
+            draft = result["draft"]
+            response = FieldDraftResponse(
+                name=draft.get("name") or draft.get("field_id", "generated_field"),
+                label=draft["label"],
+                field_type=draft["field_type"],
+                angular_config=draft.get("angular_config", {}),
+                validation_rules=draft["validation_rules"],
+                api_config=draft.get("api_config"),
+                validation_messages=draft["validation_messages"],
+                assistant_message=result["assistant_message"],
+            )
+            yield _sse_event("complete", response.model_dump())
+        except ValueError as exc:
+            yield _sse_event("error", {"message": str(exc)})
+        except Exception:
+            logger.exception("Streaming field generation failed session_id=%s", payload.session_id)
+            yield _sse_event("error", {"message": "The Field Builder could not complete this request."})
+
+    return StreamingResponse(events(), media_type="text/event-stream")
+
+
+def _sse_event(event: str, data: dict) -> str:
+    return f"event: {event}\ndata: {json.dumps(data)}\n\n"
+
+
 @router.post("/publish", response_model=FieldTemplateOut)
 def publish_field(payload: FieldPublishRequest, db: Session = Depends(get_db)):
     """Persist a complete field template independently of any generation session."""
@@ -77,7 +116,10 @@ def publish_field(payload: FieldPublishRequest, db: Session = Depends(get_db)):
     db.add(template)
     db.commit()
     db.refresh(template)
-    upsert_published_field(template)
+    try:
+        upsert_published_field(template)
+    except Exception:
+        logger.exception("Published field saved but semantic index update failed field_id=%s", template.id)
     logger.info("POST /api/fields/publish completed template_id=%s", template.id)
     return template
 
@@ -112,7 +154,10 @@ def override_field(field_id: UUID, payload: FieldOverrideRequest, db: Session = 
     template.api_config = payload.api_config
     db.commit()
     db.refresh(template)
-    upsert_published_field(template)
+    try:
+        upsert_published_field(template)
+    except Exception:
+        logger.exception("Updated field saved but semantic index update failed field_id=%s", template.id)
     logger.info("PUT /api/fields/%s completed", field_id)
     return template
 
@@ -127,7 +172,10 @@ def delete_field(field_id: UUID, db: Session = Depends(get_db)):
 
     db.delete(template)
     db.commit()
-    delete_published_field(str(field_id))
+    try:
+        delete_published_field(str(field_id))
+    except Exception:
+        logger.exception("Field deleted but semantic index update failed field_id=%s", field_id)
     logger.info("DELETE /api/fields/%s completed", field_id)
     return {"status": "deleted", "field_id": str(field_id)}
 

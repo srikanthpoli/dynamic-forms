@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { FieldGenerateResponse, FieldTemplate } from '../models/field.models';
 import { apiConfig } from '../config/api.config';
+import { postEventStream, StreamEvent } from '../utils/event-stream';
 
 @Injectable({ providedIn: 'root' })
 export class FieldBuilderApiService {
@@ -11,6 +12,14 @@ export class FieldBuilderApiService {
 
   generateField(sessionId: string, prompt: string, fieldContext: FieldTemplate | null = null): Observable<FieldGenerateResponse> {
     return this.http.post<FieldGenerateResponse>(`${this.baseUrl}/fields/generate`, {
+      session_id: sessionId,
+      prompt,
+      field_context: fieldContext,
+    });
+  }
+
+  generateFieldStream(sessionId: string, prompt: string, fieldContext: FieldTemplate | null = null): Observable<StreamEvent<FieldGenerateResponse>> {
+    return postEventStream<FieldGenerateResponse>(`${this.baseUrl}/fields/generate/stream`, {
       session_id: sessionId,
       prompt,
       field_context: fieldContext,

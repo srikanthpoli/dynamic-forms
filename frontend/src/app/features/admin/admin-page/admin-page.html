@@ -19,7 +19,7 @@
   <section class="actions-grid">
     @for (action of actions; track action.key) {
       <article class="action-card" [class]="action.tone">
-        <div class="card-topline"><span class="index-mark">{{ action.key === 'all' ? 'ALL' : action.key === 'generate' ? 'AI' : 'DB' }}</span><span class="state">{{ runningKey === action.key ? 'Running' : 'Ready' }}</span></div>
+        <div class="card-topline"><span class="index-mark">{{ action.key === 'all' ? 'ALL' : action.key === 'generate' ? 'AI' : action.key === 'sessions' ? 'CLR' : 'DB' }}</span><span class="state">{{ runningKey === action.key ? 'Running' : 'Ready' }}</span></div>
         <h2>{{ action.title }}</h2>
         <p>{{ action.description }}</p>
         <button type="button" [disabled]="!!runningKey" (click)="run(action)">{{ runningKey === action.key ? 'Working...' : action.action }}</button>
@@ -27,3 +27,12 @@
     }
   </section>
 </main>
+@if (showClearSessionsModal) {
+  <div class="modal-backdrop" role="presentation" (click)="cancelClearSessions()">
+    <section class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="clear-sessions-title" (click)="$event.stopPropagation()">
+      <div class="modal-icon">!</div>
+      <div class="modal-copy"><span class="modal-eyebrow">Clear agent state</span><h2 id="clear-sessions-title">Clear all sessions?</h2><p>This removes in-memory Field Builder and Form Builder conversations and unsaved drafts. Published data and indexes remain unchanged.</p></div>
+      <div class="modal-actions"><button class="cancel-button" type="button" (click)="cancelClearSessions()">Cancel</button><button class="delete-button" type="button" (click)="confirmClearSessions()">Clear sessions</button></div>
+    </section>
+  </div>
+}

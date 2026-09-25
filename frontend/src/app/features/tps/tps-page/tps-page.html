@@ -1,0 +1,58 @@
+<main class="tps-page">
+  <section class="page-intro">
+    <div><span class="breadcrumb">Workspace / TPS</span></div>
+    <div class="tps-badge"><span></span> TPS workspace</div>
+  </section>
+
+  <nav class="workspace-tabs" aria-label="TPS workspace views">
+    <button type="button" [class.active]="activeTab === 'irs'" (click)="selectTab('irs')">{{ activeTab === 'released' ? 'Released IRs' : 'TPS IRs' }} <span>{{ activeTab === 'released' ? releasedForms.length : irs.length }}</span></button>
+  </nav>
+
+  @if (isLoading) {
+    <div class="loading-state">Loading implementation requests...</div>
+  } @else if (error) {
+    <div class="error-state">{{ error }}</div>
+  } @else {
+    @if (success) { <div class="success-state">{{ success }}</div> }
+    @if (activeTab === 'released') {
+      <section class="released-panel">
+        <div class="panel-heading"><div><span class="eyebrow">Released to client</span><h2>Released Form Reviews</h2></div><strong>{{ releasedForms.length | number: '2.0' }}</strong></div>
+        @if (isLoadingReleased) {
+          <div class="loading-state">Loading released Form Reviews...</div>
+        } @else if (releasedForms.length) {
+          <div class="released-list">
+            @for (row of releasedForms; track row.form.id) {
+              <details class="released-card">
+                <summary class="released-card-heading"><div><strong>{{ row.form.form_title }}</strong><span>{{ row.irNumber }} · {{ row.customerName }} · Version {{ row.form.version_number }}</span></div><span class="ir-status active">Released</span><div class="released-actions"><button class="icon-action" type="button" [attr.aria-label]="savingSubmissionId === row.form.id ? 'Saving Form Review' : 'Save Form Review'" [title]="savingSubmissionId === row.form.id ? 'Saving Form Review' : 'Save Form Review'" [disabled]="savingSubmissionId === row.form.id" (click)="$event.preventDefault(); $event.stopPropagation(); saveSubmission(row)">{{ savingSubmissionId === row.form.id ? 'Saving...' : 'Save Form Review' }}</button><button class="icon-action" type="button" [attr.aria-label]="submittingFormId === row.form.id ? 'Submitting Form Review' : 'Submit Form Review back'" [title]="submittingFormId === row.form.id ? 'Submitting Form Review' : 'Submit Form Review back'" [disabled]="submittingFormId === row.form.id" (click)="$event.preventDefault(); $event.stopPropagation(); submitSubmission(row)">{{ submittingFormId === row.form.id ? 'Submitting...' : 'Submit back' }}</button></div></summary>
+                <div class="released-form-preview"><div class="client-message-field"><span>Custom message to client</span><div class="client-message-readonly">{{ clientMessage(row.form) || 'No custom message provided.' }}</div></div>
+                  @for (node of (row.form.form_snapshot?.layout_tree ?? []); track node.order) { @if (node.field) { <app-field-live-preview [field]="node.field" [compact]="true" [initialValue]="fieldValue(row.form, node.field)" (valueChange)="captureFieldValue(row.form, node.field, $event)"></app-field-live-preview> } }
+                </div>
+              </details>
+            }
+          </div>
+        } @else {
+          <p class="empty-state">No Form Reviews have been released to the client.</p>
+        }
+      </section>
+    } @else {
+    <section class="ir-panel">
+        <div class="panel-heading"><div><span class="eyebrow">TPS / IRMAIN</span><h2>Implementation requests</h2></div><strong>{{ irs.length | number: '2.0' }}</strong></div>
+        @if (irs.length) {
+          <div class="ir-list">
+            @for (ir of irs; track ir.id) {
+              <button class="ir-row" type="button" (click)="openIr(ir)">
+                <span class="ir-mark">IR</span>
+                <span class="ir-copy"><strong>{{ ir.ir_number }}</strong><span>{{ ir.customer_name }}</span></span>
+                <span class="ir-status" [class.active]="ir.status === 'active'">{{ ir.status }}</span>
+                <span class="ir-meta">{{ ir.priority }}</span>
+                <span class="chevron">›</span>
+              </button>
+            }
+          </div>
+        } @else {
+          <p class="empty-state">No implementation requests found.</p>
+        }
+      </section>
+    }
+  }
+</main>

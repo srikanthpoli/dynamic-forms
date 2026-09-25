@@ -1,0 +1,67 @@
+<main class="tps-detail-page">
+  @if (isLoading) {
+    <div class="loading-state">Loading implementation request...</div>
+  } @else if (error) {
+    <div class="error-state">{{ error }}</div>
+  } @else if (ir) {
+    <button class="back-button" type="button" (click)="goBack()">← Back to IR list</button>
+    <section class="detail-intro"><div><span class="breadcrumb">Workspace / TPS / IR detail</span><h1>{{ ir.ir_number }}</h1><p>{{ ir.customer_name }} · {{ ir.onboarding_type || 'Commercial onboarding' }}</p></div><span class="status-badge">{{ ir.status }}</span></section>
+    @if (success) { <div class="success-state">{{ success }}</div> }
+    <div class="detail-layout">
+      <section class="ir-workspace-panel">
+        <nav class="detail-tabs" role="tablist" aria-label="IR workspace">
+          <button type="button" role="tab" [class.active]="activeTab === 'detail'" (click)="selectTab('detail')">IR detail</button>
+          <button type="button" role="tab" [class.active]="activeTab === 'forms'" (click)="selectTab('forms')">SDC Dynamic eForms <span>{{ irForms.length }}</span></button>
+        </nav>
+        @if (activeTab === 'detail') {
+        <details class="ir-detail-panel" open>
+          <summary class="panel-heading"><span class="priority">{{ ir.priority }} priority</span></summary>
+        <div class="detail-grid">
+           <label><span>Customer name</span><input [(ngModel)]="ir.customer_name"></label>
+           <label><span>UEN</span><input [(ngModel)]="ir.uen"></label>
+           <label><span>First name</span><input [(ngModel)]="ir.first_name"></label>
+           <label><span>Last name</span><input [(ngModel)]="ir.last_name"></label>
+           <label><span>TIN</span><input [(ngModel)]="ir.tin"></label>
+           <label><span>Status</span><select [(ngModel)]="ir.status"><option value="draft">Draft</option><option value="active">Active</option><option value="submitted">Submitted</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></label>
+           <label><span>Priority</span><select [(ngModel)]="ir.priority"><option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option></select></label>
+           <label><span>Risk rating</span><input [(ngModel)]="ir.risk_rating"></label>
+           <label><span>Onboarding type</span><input [(ngModel)]="ir.onboarding_type"></label>
+           <label class="wide"><span>Address</span><textarea [(ngModel)]="ir.address" rows="3"></textarea></label>
+        </div>
+          <button class="save-button" type="button" [disabled]="isSaving" (click)="save()">{{ isSaving ? 'Saving...' : 'Save IR' }}</button>
+        </details>
+        } @else {
+          <div class="assigned-forms-content">
+            <div class="panel-heading"><div><span class="eyebrow">Assigned SDC eForms</span><h2>SDC Dynamic eForms</h2></div><span class="form-count">{{ irForms.length }}</span></div>
+            @if (irForms.length) {
+              <div class="assigned-form-list">
+                @for (form of irForms; track form.id) {
+                  <details class="assigned-form-card">
+                    <summary class="assigned-form-row"><div><strong>{{ form.form_title }}</strong><span>Version {{ form.version_number }}</span></div><span class="form-status">{{ form.status }}</span><div class="assigned-form-actions"><button class="icon-action" type="button" [attr.aria-label]="savingSubmissionId === form.id ? 'Saving Form Review' : 'Save Form Review'" [title]="savingSubmissionId === form.id ? 'Saving Form Review' : 'Save Form Review'" [disabled]="savingSubmissionId === form.id" (click)="$event.preventDefault(); $event.stopPropagation(); saveSubmission(form)">{{ savingSubmissionId === form.id ? 'Saving...' : 'Save' }}</button>@if (form.status === 'released') { <button class="icon-action" type="button" [attr.aria-label]="recallingFormId === form.id ? 'Recalling form' : 'Recall form'" [title]="recallingFormId === form.id ? 'Recalling form' : 'Recall form'" [disabled]="recallingFormId === form.id" (click)="$event.preventDefault(); $event.stopPropagation(); recallForm(form)">{{ recallingFormId === form.id ? 'Recalling...' : 'Recall' }}</button> } @else { <button class="icon-action" type="button" [attr.aria-label]="releasingFormId === form.id ? 'Releasing form to client' : 'Release form to client'" [title]="releasingFormId === form.id ? 'Releasing form to client' : 'Release form to client'" [disabled]="releasingFormId === form.id" (click)="$event.preventDefault(); $event.stopPropagation(); releaseForm(form)">{{ releasingFormId === form.id ? 'Releasing...' : 'Release' }}</button><button class="icon-action delete-button" type="button" [attr.aria-label]="deletingFormId === form.id ? 'Deleting Form Review' : 'Delete Form Review'" [title]="deletingFormId === form.id ? 'Deleting Form Review' : 'Delete Form Review'" [disabled]="deletingFormId === form.id" (click)="$event.preventDefault(); $event.stopPropagation(); requestDelete(form)">{{ deletingFormId === form.id ? 'Deleting...' : 'Delete' }}</button> }</div></summary>
+                    <div class="assigned-form-preview"><span class="eyebrow">Form Review</span><label class="client-message-field"><span>Custom message to client</span><textarea rows="4" [ngModel]="clientMessage(form)" (ngModelChange)="captureClientMessage(form, $event)" placeholder="Enter a message for the client..."></textarea></label>
+                  @if (form.form_snapshot?.layout_tree?.length) {
+                    @for (node of (form.form_snapshot?.layout_tree ?? []); track node.order) { @if (node.field) { <app-field-live-preview [field]="node.field" [compact]="true" [initialValue]="fieldValue(form, node.field)" (valueChange)="captureFieldValue(form, node.field, $event)"></app-field-live-preview> } }
+                  }
+                  <details class="event-history"><summary class="eyebrow">Event history</summary>@if (form.event_history?.length) { <ol>@for (event of form.event_history; track event.created_at + event.event_type) { <li><strong>{{ eventLabel(event.event_type) }}</strong><time>{{ event.created_at | date: 'medium' }}</time></li> }</ol> } @else { <p>No events recorded yet.</p> }</details>
+                  </div>
+                  </details>
+                }
+              </div>
+            } @else { <p class="empty-forms">No forms assigned to this IR yet.</p> }
+          </div>
+        }
+      </section>
+      <app-tps-ir-assist [ir]="ir" (formAssigned)="onFormAssigned()"></app-tps-ir-assist>
+    </div>
+  }
+</main>
+@if (pendingDeleteForm) {
+  <div class="modal-backdrop" role="presentation" (click)="cancelDelete()">
+    <section class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="delete-dialog-title" (click)="$event.stopPropagation()">
+      <span class="eyebrow">Delete Form Review</span>
+      <h2 id="delete-dialog-title">Delete {{ pendingDeleteForm.form_title }}?</h2>
+      <p>This unreleased Form Review and its saved data will be permanently deleted.</p>
+      <div class="confirm-actions"><button type="button" class="cancel-button" (click)="cancelDelete()">Cancel</button><button type="button" class="confirm-delete-button" [disabled]="!!deletingFormId" (click)="deleteForm()">{{ deletingFormId ? 'Deleting...' : 'Delete Form Review' }}</button></div>
+    </section>
+  </div>
+}

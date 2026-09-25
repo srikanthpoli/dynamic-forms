@@ -94,18 +94,25 @@ export class FieldBuilderPageComponent implements OnInit {
     this.messages = [...this.messages, { role: 'user', text: prompt }];
     this.isLoading = true;
     this.error = '';
-    this.api.generateField(this.sessionId, prompt, this.draft).pipe(
+    this.api.generateFieldStream(this.sessionId, prompt, this.draft).pipe(
       timeout(120000),
       finalize(() => {
         this.isLoading = false;
         this.changeDetector.markForCheck();
       }),
     ).subscribe({
-      next: field => {
-        this.draft = this.isEditing && this.draft?.id
-          ? { ...field, id: this.draft.id }
-          : field;
-        this.messages = [...this.messages, { role: 'agent', text: field.assistant_message || JSON.stringify(field, null, 2) }];
+      next: event => {
+        if (event.type === 'status') {
+          this.messages = [...this.messages, { role: 'agent', text: (event.data as { message: string }).message }];
+        } else if (event.type === 'complete') {
+          const field = event.data as FieldTemplate;
+          this.draft = this.isEditing && this.draft?.id
+            ? { ...field, id: this.draft.id }
+            : field;
+          this.messages = [...this.messages, { role: 'agent', text: field.assistant_message || JSON.stringify(field, null, 2) }];
+        } else if (event.type === 'error') {
+          this.error = (event.data as { message: string }).message;
+        }
         this.changeDetector.markForCheck();
       },
       error: error => {

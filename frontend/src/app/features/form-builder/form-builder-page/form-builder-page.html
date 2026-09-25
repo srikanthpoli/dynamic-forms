@@ -1,5 +1,5 @@
 <main class="builder-page">
-  <section class="page-intro"><div><span class="breadcrumb">Workspace / Form builder</span><h1>Assemble forms that just work.</h1><p>Describe the form you need and the agent assembles it from your published field templates, ready to save and publish.</p></div>@if (showBuilderAgent) {<div class="agent-badge"><span class="pulse"></span> Agent online</div>}</section>
+  <section class="page-intro"><div><span class="breadcrumb">Workspace / Form builder</span><h1>Assemble forms that just work.</h1></div>@if (showBuilderAgent) {<div class="agent-badge"><span class="pulse"></span> Agent online</div>}</section>
   <div class="builder-grid">
     <aside class="library-column">
       <details class="library-collapse" open>
@@ -11,12 +11,14 @@
         <app-field-library [fields]="fields" [readOnly]="true" (fieldSelected)="noop()" (fieldEditRequested)="editField($event)"></app-field-library>
       </details>
     </aside>
-    <div class="workspace-column">
+    <section class="draft-column">
+      <app-form-preview [form]="draft" [isLoading]="isLoading" [isSaving]="isSaving" [isPublishing]="!!publishingVersionId" [error]="error" [hasGenerated]="!!draft" [isEditing]="isEditing" [selectedVersion]="selectedVersion" [versionBump]="versionBump" (versionBumpChange)="setVersionBump($event)" (layoutChanged)="draft = $event" (saveRequested)="save()" (publishRequested)="publishSelectedVersion()" (newVersionRequested)="createNewVersion()"></app-form-preview>
+    </section>
+    <aside class="agent-column">
       @if (showBuilderAgent) {
         <app-form-prompt-panel [messages]="messages" [isSending]="isLoading" (promptSubmitted)="generate($event)" (newSessionRequested)="startNewSession()"></app-form-prompt-panel>
       }
-      <app-form-preview [form]="draft" [isLoading]="isLoading" [isSaving]="isSaving" [isPublishing]="!!publishingVersionId" [error]="error" [hasGenerated]="!!draft" [isEditing]="isEditing" [selectedVersion]="selectedVersion" [versionBump]="versionBump" (versionBumpChange)="setVersionBump($event)" (layoutChanged)="draft = $event" (saveRequested)="save()" (publishRequested)="publishSelectedVersion()" (newVersionRequested)="createNewVersion()"></app-form-preview>
-    </div>
+    </aside>
   </div>
 </main>
 @if (versionPendingDeletion) {

@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
-from app.routers import fields, forms, proxy, spec
+from app.routers import fields, forms, proxy, spec, tps
 
 settings = get_settings()
 
@@ -28,6 +28,7 @@ app.include_router(fields.router)
 app.include_router(forms.router)
 app.include_router(spec.router)
 app.include_router(proxy.router)
+app.include_router(tps.router)
 
 
 @app.get("/health")

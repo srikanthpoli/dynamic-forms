@@ -1,9 +1,13 @@
+@if (isMinimized) {
+  <button class="chat-launcher" type="button" (click)="toggleMinimized()" aria-label="Open Form Builder Agent"><span class="launcher-dot"></span><span>Agent</span><span class="launcher-count">{{ messages.length || '' }}</span></button>
+} @else {
 <section class="chat-panel">
-  <div class="chat-heading"><div><div class="eyebrow">Form Builder Agent</div><h2>Assemble the form together</h2></div><span class="agent-status"><span></span> Online</span></div>
+  <div class="chat-heading"><div><div class="eyebrow">Form Builder Agent</div><h2>Assemble the form together</h2></div><div class="chat-heading-actions"><span class="agent-status"><span></span> Online</span><button class="minimize-button" type="button" (click)="toggleMinimized()" aria-label="Minimize Form Builder Agent" title="Minimize">−</button></div></div>
   <div class="chat-history" aria-live="polite">
     @if (!messages.length) { <div class="welcome"><div class="welcome-mark">✦</div><strong>What form should we build?</strong><p>Describe the form in plain language. I'll assemble it from your published field templates.</p></div> }
     @for (message of messages; track $index) { <div class="message" [ngClass]="message.role"><span class="message-avatar">{{ message.role === 'user' ? 'You' : 'AI' }}</span><p>{{ message.text }}</p></div> }
   </div>
   <div class="prompt-input"><label for="form-prompt">Your request</label><textarea id="form-prompt" [(ngModel)]="prompt" rows="3" [disabled]="isSending" placeholder="Example: Build a customer registration form using the full name and email fields." (keydown.enter)="handleEnter($event)"></textarea><span class="input-hint">{{ isSending ? 'Waiting for the agent...' : 'Enter to send · Shift + Enter for a new line' }}</span></div>
-  <div class="prompt-footer"><span>Same session · refine this draft anytime</span><div class="prompt-actions"><button class="new-session" type="button" (click)="newSessionRequested.emit()">New session</button><button mat-flat-button color="primary" type="button" [disabled]="isSending" (click)="submit()">{{ isSending ? 'Waiting...' : 'Send request' }}</button></div></div>
+  <div class="prompt-footer"><span>Same session · refine this draft anytime</span><div class="prompt-actions"><button class="new-session" type="button" (click)="newSessionRequested.emit()">New</button><button mat-flat-button color="primary" type="button" [disabled]="isSending" (click)="submit()">{{ isSending ? 'Waiting...' : 'Send' }}</button></div></div>
 </section>
+}

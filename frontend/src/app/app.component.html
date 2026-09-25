@@ -8,6 +8,8 @@
     <a routerLink="/forms" routerLinkActive="active">Form builder</a>
     <a routerLink="/library" routerLinkActive="active">Published library</a>
     <a routerLink="/admin" routerLinkActive="active">Admin</a>
+    <a routerLink="/tps" [queryParams]="{ tab: 'irs' }" routerLinkActive="active">TPS</a>
+    <a routerLink="/tps" [queryParams]="{ tab: 'released' }" routerLinkActive="active">Released</a>
   </nav>
   <button class="profile" type="button">SR</button>
 </header>

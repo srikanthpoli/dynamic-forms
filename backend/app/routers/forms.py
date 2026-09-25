@@ -1,9 +1,11 @@
+import json
 import logging
 
 import re
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from langchain_core.messages import AIMessage
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -281,6 +283,57 @@ def build_form(payload: FormBuildRequest, db: Session = Depends(get_db)):
     )
 
 
+@router.post("/build/stream")
+def build_form_stream(payload: FormBuildRequest, db: Session = Depends(get_db)):
+    """Stream progress events, then return the final validated form result."""
+    def events():
+        yield _sse_event("status", {"message": "Reviewing the available field templates..."})
+        session = get_form_session(payload.session_id)
+        if payload.form_context:
+            session["form_definition"] = {
+                "title": payload.form_context.get("title", "Untitled Form"),
+                "description": payload.form_context.get("description"),
+                "layout_tree": payload.form_context.get("layout_tree", []),
+            }
+            session["layout_tree"] = session["form_definition"]["layout_tree"]
+        try:
+            yield _sse_event("status", {"message": "Assembling the form layout..."})
+            result = run_form_builder(
+                payload.prompt,
+                db,
+                session["messages"],
+                _agent_layout_tree(session["layout_tree"]),
+                session["form_definition"],
+            )
+            session["messages"] = result["messages"]
+            session["layout_tree"] = result["layout_tree"]
+            form_definition = result.get("form_definition") or session["form_definition"]
+            form_definition.setdefault("title", "Untitled Form")
+            form_definition.setdefault("description", None)
+            form_definition.setdefault("layout_tree", session["layout_tree"])
+            session["form_definition"] = form_definition
+            save_form_session(payload.session_id, session)
+            response_definition = {
+                **form_definition,
+                "layout_tree": _enrich_layout_tree(form_definition["layout_tree"], db),
+            }
+            response = FormBuildResponse(
+                session_id=payload.session_id,
+                form_definition=response_definition,
+                assistant_message=result.get("assistant_message"),
+            )
+            yield _sse_event("complete", response.model_dump())
+        except Exception:
+            logger.exception("Streaming form build failed session_id=%s", payload.session_id)
+            yield _sse_event("error", {"message": "The Form Builder could not complete this request."})
+
+    return StreamingResponse(events(), media_type="text/event-stream")
+
+
+def _sse_event(event: str, data: dict) -> str:
+    return f"event: {event}\ndata: {json.dumps(data)}\n\n"
+
+
 @router.delete("/sessions/{session_id}")
 def kill_form_builder_session(session_id: str):
     """Clear a form builder session's conversation history and layout."""
@@ -482,7 +535,10 @@ def publish_form_version(form_id: str, version_id: str, db: Session = Depends(ge
     db.commit()
     definition = db.query(FormDefinition).filter(FormDefinition.id == version.form_id).first()
     if definition:
-        upsert_published_form(version, definition)
+        try:
+            upsert_published_form(version, definition)
+        except Exception:
+            logger.exception("Form version published but semantic index update failed version_id=%s", version.id)
     logger.info("POST /api/forms/%s/versions/%s/publish completed", form_id, version_id)
     return {"status": "published", "version_id": version_id}
 
@@ -501,6 +557,9 @@ def delete_form_version(form_id: str, version_id: str, db: Session = Depends(get
 
     db.delete(version)
     db.commit()
-    delete_published_form(version_id)
+    try:
+        delete_published_form(version_id)
+    except Exception:
+        logger.exception("Form version deleted but semantic index update failed version_id=%s", version_id)
     logger.info("DELETE /api/forms/%s/versions/%s completed", form_id, version_id)
     return {"status": "deleted", "version_id": version_id}

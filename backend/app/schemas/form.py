@@ -24,6 +24,132 @@ class FormBuildResponse(BaseModel):
     assistant_message: str | None = None
 
 
+class TpsIrOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    ir_number: str
+    customer_name: str
+    uen: str | None = None
+    first_name: str | None = None
+    last_name: str | None = None
+    tin: str | None = None
+    address: str | None = None
+    status: str
+    priority: str
+    onboarding_type: str | None = None
+    risk_rating: str | None = None
+
+    class TpsIrUpdate(BaseModel):
+        """Editable fields for PUT /api/tps/irs/{ir_number}."""
+
+        customer_name: str
+        uen: str | None = None
+        first_name: str | None = None
+        last_name: str | None = None
+        tin: str | None = None
+        address: str | None = None
+        status: str = "draft"
+        priority: str = "normal"
+        onboarding_type: str | None = None
+        risk_rating: str | None = None
+
+
+class TpsIrUpdate(BaseModel):
+    """Editable fields for PUT /api/tps/irs/{ir_number}."""
+
+    customer_name: str
+    uen: str | None = None
+    first_name: str | None = None
+    last_name: str | None = None
+    tin: str | None = None
+    address: str | None = None
+    status: str = "draft"
+    priority: str = "normal"
+    onboarding_type: str | None = None
+    risk_rating: str | None = None
+
+    model_config = ConfigDict(json_schema_extra={
+        "examples": [{
+            "customer_name": "Northstar Trading Pte Ltd",
+            "uen": "201912345K",
+            "first_name": "Alicia",
+            "last_name": "Tan",
+            "tin": "T1234567A",
+            "address": "12 Marina View, Singapore",
+            "status": "active",
+            "priority": "high",
+            "onboarding_type": "Commercial onboarding",
+            "risk_rating": "medium",
+        }]
+    })
+
+
+class TpsIrAssistRequest(BaseModel):
+    session_id: str
+    prompt: str
+    ir_context: TpsIrOut | None = None
+
+
+class TpsIrContextRequest(BaseModel):
+    session_id: str
+    ir_context: TpsIrOut
+
+
+class TpsIrAssistResponse(BaseModel):
+    assistant_message: str
+    published_forms: list[dict[str, Any]] = []
+    pending_form: dict[str, Any] | None = None
+
+
+class TpsFormCandidate(BaseModel):
+    form_id: UUID
+    version_id: UUID
+    title: str
+    version_number: str
+    match_summary: str
+
+
+class TpsFormSearchResponse(BaseModel):
+    status: str
+    forms: list[TpsFormCandidate] = []
+    assistant_message: str
+
+
+class IrFormCreate(BaseModel):
+    form_id: UUID
+    form_version_id: UUID
+    required: bool = False
+    display_order: int = 0
+
+
+class IrFormOut(BaseModel):
+    id: UUID
+    ir_id: UUID
+    form_id: UUID
+    form_version_id: UUID
+    form_title: str
+    version_number: str
+    status: str
+    required: bool
+    display_order: int
+    released_at: Any | None = None
+    submission_id: UUID | None = None
+    form_snapshot: dict[str, Any] | None = None
+    submission_data: dict[str, Any] | None = None
+    event_history: list[dict[str, Any]] = []
+
+
+class TpsReleaseOut(BaseModel):
+    ir_form_id: UUID
+    submission_id: UUID
+    status: str
+
+
+class SubmissionDataUpdate(BaseModel):
+    submission_data: dict[str, Any]
+
+
 class PublishedFormOut(BaseModel):
     form_id: UUID
     title: str

@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { finalize, timeout } from 'rxjs';
 import { FormBuilderApiService } from '../../../core/services/form-builder-api.service';
 import { FieldBuilderApiService } from '../../../core/services/field-builder-api.service';
-import { FormDefinition, FormDefinitionJson, FormVersion } from '../../../core/models/form.models';
+import { FormBuildResponse, FormDefinition, FormDefinitionJson, FormVersion } from '../../../core/models/form.models';
 import { FieldTemplate } from '../../../core/models/field.models';
 import { FormPromptPanelComponent } from '../form-prompt-panel/form-prompt-panel';
 import { FormPreviewComponent } from '../form-preview/form-preview';
@@ -110,20 +110,27 @@ export class FormBuilderPageComponent implements OnInit {
     this.messages = [...this.messages, { role: 'user', text: prompt }];
     this.isLoading = true;
     this.error = '';
-    this.api.buildForm(this.sessionId, prompt, this.draft).pipe(
+    this.api.buildFormStream(this.sessionId, prompt, this.draft).pipe(
       timeout(120000),
       finalize(() => {
         this.isLoading = false;
         this.changeDetector.markForCheck();
       }),
     ).subscribe({
-      next: response => {
-        this.draft = response.form_definition;
-        this.messages = [...this.messages, {
-          role: 'agent',
-          text: response.assistant_message
-            ?? `Assembled "${response.form_definition.title}" with ${response.form_definition.layout_tree.length} field(s). Review the preview below, or tell me what to change.`,
-        }];
+      next: event => {
+        if (event.type === 'status') {
+          this.messages = [...this.messages, { role: 'agent', text: (event.data as { message: string }).message }];
+        } else if (event.type === 'complete') {
+          const response = event.data as FormBuildResponse;
+          this.draft = response.form_definition;
+          this.messages = [...this.messages, {
+            role: 'agent',
+            text: response.assistant_message
+              ?? `Assembled "${response.form_definition.title}" with ${response.form_definition.layout_tree.length} field(s). Review the preview below, or tell me what to change.`,
+          }];
+        } else if (event.type === 'error') {
+          this.error = (event.data as { message: string }).message;
+        }
         this.changeDetector.markForCheck();
       },
       error: error => {

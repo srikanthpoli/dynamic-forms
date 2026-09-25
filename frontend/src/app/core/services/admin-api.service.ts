@@ -16,6 +16,13 @@ export interface CapabilityGenerationResponse {
   registry: Record<string, unknown>;
 }
 
+export interface ClearSessionsResponse {
+  status: string;
+  field_sessions: number;
+  form_sessions: number;
+  tps_ir_sessions: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AdminApiService {
   private readonly http = inject(HttpClient);
@@ -39,5 +46,9 @@ export class AdminApiService {
 
   regenerateCapabilities(): Observable<CapabilityGenerationResponse> {
     return this.http.post<CapabilityGenerationResponse>(`${this.baseUrl}/generate-capabilities`, {});
+  }
+
+  clearSessions(): Observable<ClearSessionsResponse> {
+    return this.http.post<ClearSessionsResponse>(`${this.baseUrl}/clear-sessions`, {});
   }
 }

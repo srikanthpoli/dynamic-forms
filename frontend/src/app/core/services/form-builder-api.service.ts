@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { FormBuildResponse, FormDefinition, FormDefinitionJson, FormVersion, PublishedForm } from '../models/form.models';
 import { apiConfig } from '../config/api.config';
+import { postEventStream, StreamEvent } from '../utils/event-stream';
 
 @Injectable({ providedIn: 'root' })
 export class FormBuilderApiService {
@@ -11,6 +12,14 @@ export class FormBuilderApiService {
 
   buildForm(sessionId: string, prompt: string, formContext?: FormDefinitionJson | null): Observable<FormBuildResponse> {
     return this.http.post<FormBuildResponse>(`${this.baseUrl}/forms/build`, {
+      session_id: sessionId,
+      prompt,
+      form_context: formContext ?? null,
+    });
+  }
+
+  buildFormStream(sessionId: string, prompt: string, formContext?: FormDefinitionJson | null): Observable<StreamEvent<FormBuildResponse>> {
+    return postEventStream<FormBuildResponse>(`${this.baseUrl}/forms/build/stream`, {
       session_id: sessionId,
       prompt,
       form_context: formContext ?? null,

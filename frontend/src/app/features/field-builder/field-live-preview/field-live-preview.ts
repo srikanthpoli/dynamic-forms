@@ -7,6 +7,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatSelectModule } from '@angular/material/select';
 import { FieldTemplate } from '../../../core/models/field.models';
+import { resolveControlKind } from '../../../core/capabilities/control-registry';
 import { buildFieldValidators, getConfiguredValidationMessages, getValidationMessage } from '../../../core/validation/field-validation';
 
 @Component({
@@ -21,7 +22,10 @@ export class FieldLivePreviewComponent implements OnInit, OnChanges {
   @Input() field: FieldTemplate | null = null;
   /** Hides the standalone "Field Preview" label and rule tiles when embedded inside a real form. */
   @Input() compact = false;
+  /** Seeds the control with a previously saved value (e.g. a draft submission). */
+  @Input() initialValue: string | boolean | null = null;
   @Output() readonly validityChange = new EventEmitter<boolean>();
+  @Output() readonly valueChange = new EventEmitter<string | boolean>();
 
   value = '';
   checked = false;
@@ -30,15 +34,17 @@ export class FieldLivePreviewComponent implements OnInit, OnChanges {
 
   ngOnInit(): void {
     this.previewControl.statusChanges.subscribe(() => this.emitValidity());
-    this.previewControl.valueChanges.subscribe(() => this.emitValidity());
+    this.previewControl.valueChanges.subscribe(value => { this.emitValidity(); this.valueChange.emit(value); });
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['field']) {
-      this.previewControl = new FormControl<string | boolean>('', { nonNullable: true, validators: buildFieldValidators(this.field?.validation_rules ?? {}) });
+      this.previewControl = new FormControl<string | boolean>(this.initialValue ?? '', { nonNullable: true, validators: buildFieldValidators(this.field?.validation_rules ?? {}) });
       this.previewControl.statusChanges.subscribe(() => this.emitValidity());
-      this.previewControl.valueChanges.subscribe(() => this.emitValidity());
+      this.previewControl.valueChanges.subscribe(value => { this.emitValidity(); this.valueChange.emit(value); });
       this.emitValidity();
+    } else if (changes['initialValue']) {
+      this.previewControl.setValue(this.initialValue ?? '', { emitEvent: false });
     }
   }
 
@@ -47,6 +53,10 @@ export class FieldLivePreviewComponent implements OnInit, OnChanges {
   }
 
   get isValid(): boolean { return this.previewControl.valid && this.previewControl.touched; }
+
+  get controlKind() {
+    return resolveControlKind(this.field?.field_type);
+  }
 
   get validationMessage(): string {
     return getValidationMessage(this.previewControl, this.field?.validation_messages ?? {});

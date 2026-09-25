@@ -19,6 +19,11 @@ export class FieldPromptPanelComponent {
   @Output() readonly promptSubmitted = new EventEmitter<string>();
   @Output() readonly newSessionRequested = new EventEmitter<void>();
   prompt = 'Create a required customer email field with a maximum length of 120 characters.';
+  isMinimized = false;
+
+  toggleMinimized(): void {
+    this.isMinimized = !this.isMinimized;
+  }
 
   submit(): void {
     if (this.isSending) return;

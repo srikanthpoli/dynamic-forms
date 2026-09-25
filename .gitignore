@@ -1,6 +1,7 @@
 # Secrets and local configuration
 .env
 .env.*
+backend/.env_aws
 !.env.example
 *.pem
 *.key
