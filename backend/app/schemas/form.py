@@ -100,6 +100,7 @@ class TpsIrAssistResponse(BaseModel):
     assistant_message: str
     published_forms: list[dict[str, Any]] = []
     pending_form: dict[str, Any] | None = None
+    show_form_tools: bool = False
 
 
 class TpsFormCandidate(BaseModel):

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostListener, OnDestroy, OnInit, inject } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -7,6 +7,7 @@ import { forkJoin, map } from 'rxjs';
 import { IrForm, TpsApiService, TpsIr } from '../../../core/services/tps-api.service';
 import { FieldLivePreviewComponent } from '../../field-builder/field-live-preview/field-live-preview';
 import { FieldTemplate } from '../../../core/models/field.models';
+import { TpsIrAssistComponent } from '../tps-ir-assist/tps-ir-assist';
 
 interface ReleasedFormRow {
   irNumber: string;
@@ -17,12 +18,12 @@ interface ReleasedFormRow {
 @Component({
   selector: 'app-tps-page',
   standalone: true,
-  imports: [DatePipe, DecimalPipe, FormsModule, FieldLivePreviewComponent],
+  imports: [DatePipe, DecimalPipe, FormsModule, FieldLivePreviewComponent, TpsIrAssistComponent],
   templateUrl: './tps-page.html',
   styleUrl: './tps-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class TpsPageComponent implements OnInit {
+export class TpsPageComponent implements OnInit, OnDestroy {
   private readonly api = inject(TpsApiService);
   private readonly changeDetector = inject(ChangeDetectorRef);
   private readonly router = inject(Router);
@@ -37,12 +38,23 @@ export class TpsPageComponent implements OnInit {
   activeTab: 'irs' | 'released' = 'irs';
   savingSubmissionId: string | null = null;
   submittingFormId: string | null = null;
+  activeAssistFormId: string | null = null;
+  activeAssistIr: TpsIr | null = null;
+  activeAssistContextKey = '';
+  isAssistMinimized = false;
+  isAssistDragging = false;
+  assistPosition: { left: number; top: number } | null = null;
+  private assistDragOffset = { x: 0, y: 0 };
+  private assistDragSize = { width: 0, height: 0 };
   private readonly clientMessageKey = 'client_message';
+  private readonly assistPointerMove = (event: PointerEvent) => this.dragAssist(event);
+  private readonly assistPointerUp = () => this.stopAssistDrag();
 
   ngOnInit(): void {
     this.route.queryParamMap.subscribe(params => {
       this.activeTab = params.get('tab') === 'released' ? 'released' : 'irs';
       if (this.activeTab === 'released' && this.irs.length) this.loadReleasedForms();
+      if (this.activeTab !== 'released') this.closeIrAssist();
       this.changeDetector.markForCheck();
     });
     this.api.listIrs().subscribe({
@@ -63,6 +75,7 @@ export class TpsPageComponent implements OnInit {
   selectTab(tab: 'irs' | 'released'): void {
     this.activeTab = tab;
     if (tab === 'released') this.loadReleasedForms();
+    if (tab !== 'released') this.closeIrAssist();
   }
 
   private loadReleasedForms(): void {
@@ -126,6 +139,82 @@ export class TpsPageComponent implements OnInit {
         this.changeDetector.markForCheck();
       },
     });
+  }
+
+  openIrAssist(row: ReleasedFormRow): void {
+    const ir = this.irs.find(item => item.ir_number === row.irNumber) ?? null;
+    if (!ir) {
+      this.error = 'The IR context for this released form could not be loaded.';
+      this.changeDetector.markForCheck();
+      return;
+    }
+    this.activeAssistFormId = row.form.id;
+    this.activeAssistIr = ir;
+    this.activeAssistContextKey = `${row.form.id}-${Date.now()}`;
+    this.isAssistMinimized = false;
+    this.assistPosition = null;
+    this.changeDetector.markForCheck();
+  }
+
+  toggleAssistMinimized(): void {
+    this.isAssistMinimized = !this.isAssistMinimized;
+    this.changeDetector.markForCheck();
+  }
+
+  closeIrAssist(): void {
+    this.activeAssistFormId = null;
+    this.activeAssistIr = null;
+    this.activeAssistContextKey = '';
+    this.isAssistMinimized = false;
+    this.assistPosition = null;
+    this.stopAssistDrag();
+    this.changeDetector.markForCheck();
+  }
+
+  @HostListener('window:blur')
+  closeAssistOnWindowBlur(): void {
+    this.closeIrAssist();
+  }
+
+  @HostListener('document:visibilitychange')
+  closeAssistOnVisibilityChange(): void {
+    if (document.hidden) this.closeIrAssist();
+  }
+
+  startAssistDrag(event: PointerEvent): void {
+    const panel = (event.currentTarget as HTMLElement).closest('.floating-assist') as HTMLElement | null;
+    if (!panel) return;
+    const rect = panel.getBoundingClientRect();
+    this.assistPosition = { left: rect.left, top: rect.top };
+    this.assistDragOffset = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    this.assistDragSize = { width: rect.width, height: rect.height };
+    this.isAssistDragging = true;
+    document.addEventListener('pointermove', this.assistPointerMove);
+    document.addEventListener('pointerup', this.assistPointerUp, { once: true });
+    event.preventDefault();
+    this.changeDetector.markForCheck();
+  }
+
+  private dragAssist(event: PointerEvent): void {
+    if (!this.isAssistDragging) return;
+    const maxLeft = Math.max(0, window.innerWidth - this.assistDragSize.width);
+    const maxTop = Math.max(0, window.innerHeight - this.assistDragSize.height);
+    this.assistPosition = {
+      left: Math.min(Math.max(0, event.clientX - this.assistDragOffset.x), maxLeft),
+      top: Math.min(Math.max(0, event.clientY - this.assistDragOffset.y), maxTop),
+    };
+    this.changeDetector.markForCheck();
+  }
+
+  private stopAssistDrag(): void {
+    this.isAssistDragging = false;
+    document.removeEventListener('pointermove', this.assistPointerMove);
+    document.removeEventListener('pointerup', this.assistPointerUp);
+  }
+
+  ngOnDestroy(): void {
+    this.closeIrAssist();
+    this.stopAssistDrag();
   }
 
   fieldValue(form: IrForm, field: FieldTemplate): string | boolean | null {

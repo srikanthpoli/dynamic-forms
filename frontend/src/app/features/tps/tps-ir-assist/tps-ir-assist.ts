@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, Output, inject } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { TpsApiService, TpsIr, TpsPublishedForm } from '../../../core/services/tps-api.service';
@@ -17,21 +17,31 @@ interface AssistMessage {
   styleUrl: './tps-ir-assist.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class TpsIrAssistComponent {
+export class TpsIrAssistComponent implements OnChanges {
   private readonly api = inject(TpsApiService);
   private readonly changeDetector = inject(ChangeDetectorRef);
 
   @Input() ir: TpsIr | null = null;
+  @Input() autoLoadContextKey = '';
+  @Input() allowFormAssignment = true;
   @Output() readonly formAssigned = new EventEmitter<void>();
   messages: AssistMessage[] = [];
   prompt = '';
   isContextLoaded = false;
+  showFormTools = false;
   formUnavailable = false;
   isSending = false;
   error = '';
   publishedForms: TpsPublishedForm[] = [];
   pendingForm: TpsPublishedForm | null = null;
   private sessionId = createSessionId('tps-ir');
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['autoLoadContextKey'] && this.autoLoadContextKey && this.ir) {
+      this.newSession(false);
+      this.loadContext();
+    }
+  }
 
   loadContext(): void {
     if (!this.ir) return;
@@ -59,12 +69,18 @@ export class TpsIrAssistComponent {
     this.messages = [...this.messages, { role: 'user', text: prompt }];
     this.isSending = true;
     this.error = '';
+    this.showFormTools = false;
+    this.formUnavailable = false;
+    this.publishedForms = [];
+    this.pendingForm = null;
+    this.changeDetector.markForCheck();
     this.api.askIrAssistantSession(this.ir.ir_number, this.sessionId, prompt).subscribe({
       next: response => {
         this.messages = [...this.messages, { role: 'assistant', text: response.assistant_message }];
+        this.showFormTools = response.show_form_tools === true;
         this.publishedForms = response.published_forms ?? [];
         this.pendingForm = response.pending_form ?? null;
-        this.formUnavailable = !this.publishedForms.length && !this.pendingForm;
+        this.formUnavailable = this.showFormTools && !this.publishedForms.length && !this.pendingForm;
         this.isSending = false;
         this.changeDetector.markForCheck();
       },
@@ -77,7 +93,7 @@ export class TpsIrAssistComponent {
   }
 
   confirmPendingForm(): void {
-    if (!this.ir || !this.pendingForm || this.isSending) return;
+    if (!this.ir || !this.pendingForm || this.isSending || !this.allowFormAssignment) return;
     this.isSending = true;
     this.api.assignFormToIr(this.ir.ir_number, this.pendingForm).subscribe({
       next: () => {
@@ -100,17 +116,18 @@ export class TpsIrAssistComponent {
     this.messages = [...this.messages, { role: 'system', text: 'Form assignment cancelled.' }];
   }
 
-  newSession(): void {
+  newSession(markForCheck = true): void {
     this.sessionId = createSessionId('tps-ir');
     this.messages = [];
     this.prompt = '';
     this.isContextLoaded = false;
     this.pendingForm = null;
     this.publishedForms = [];
+    this.showFormTools = false;
     this.formUnavailable = false;
     this.error = '';
     this.isSending = false;
-    this.changeDetector.markForCheck();
+    if (markForCheck) this.changeDetector.markForCheck();
   }
 
   handleEnter(event: Event): void {

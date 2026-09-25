@@ -6,10 +6,10 @@
       <div class="assist-message" [class.user]="message.role === 'user'" [class.system]="message.role === 'system'"><span>{{ message.role === 'user' ? 'You' : message.role === 'system' ? 'IR' : 'AI' }}</span><p [innerHTML]="formatMessage(message.text)"></p></div>
     }
   </div>
-  @if (pendingForm) {
+  @if (pendingForm && allowFormAssignment) {
     <div class="confirmation-box"><p>Use <strong>{{ pendingForm.title }}</strong> version {{ pendingForm.version_number }} for this IR?</p><div><button class="cancel-button" type="button" [disabled]="isSending" (click)="cancelPendingForm()">Cancel</button><button class="confirm-button" type="button" [disabled]="isSending" (click)="confirmPendingForm()">{{ isSending ? 'Assigning...' : 'Confirm' }}</button></div></div>
   }
-  @if (formUnavailable) {
+  @if (showFormTools && formUnavailable) {
     <div class="form-unavailable"><strong>No matching published form found</strong><p>Would you like me to list the available forms, or build a new form for this request?</p><div class="form-unavailable-actions"><a routerLink="/library">List Published Forms</a><a routerLink="/forms">Build a New Form</a></div></div>
   }
   @if (error) { <div class="assist-error">{{ error }}</div> }

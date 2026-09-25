@@ -22,6 +22,7 @@ export interface TpsIrAssistResponse {
   assistant_message: string;
   published_forms?: TpsPublishedForm[];
   pending_form?: TpsPublishedForm | null;
+  show_form_tools?: boolean;
 }
 
 export interface TpsPublishedFormField {

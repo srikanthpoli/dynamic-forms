@@ -23,7 +23,7 @@
           <div class="released-list">
             @for (row of releasedForms; track row.form.id) {
               <details class="released-card">
-                <summary class="released-card-heading"><div><strong>{{ row.form.form_title }}</strong><span>{{ row.irNumber }} · {{ row.customerName }} · Version {{ row.form.version_number }}</span></div><span class="ir-status active">Released</span><div class="released-actions"><button class="icon-action" type="button" [attr.aria-label]="savingSubmissionId === row.form.id ? 'Saving Form Review' : 'Save Form Review'" [title]="savingSubmissionId === row.form.id ? 'Saving Form Review' : 'Save Form Review'" [disabled]="savingSubmissionId === row.form.id" (click)="$event.preventDefault(); $event.stopPropagation(); saveSubmission(row)">{{ savingSubmissionId === row.form.id ? 'Saving...' : 'Save Form Review' }}</button><button class="icon-action" type="button" [attr.aria-label]="submittingFormId === row.form.id ? 'Submitting Form Review' : 'Submit Form Review back'" [title]="submittingFormId === row.form.id ? 'Submitting Form Review' : 'Submit Form Review back'" [disabled]="submittingFormId === row.form.id" (click)="$event.preventDefault(); $event.stopPropagation(); submitSubmission(row)">{{ submittingFormId === row.form.id ? 'Submitting...' : 'Submit back' }}</button></div></summary>
+                <summary class="released-card-heading"><div><strong>{{ row.form.form_title }}</strong><span>{{ row.irNumber }} · {{ row.customerName }} · Version {{ row.form.version_number }}</span></div><span class="ir-status active">Released</span><div class="released-actions"><button class="icon-action" type="button" [attr.aria-label]="savingSubmissionId === row.form.id ? 'Saving' : 'Save'" [title]="savingSubmissionId === row.form.id ? 'Saving' : 'Save'" [disabled]="savingSubmissionId === row.form.id" (click)="$event.preventDefault(); $event.stopPropagation(); saveSubmission(row)">{{ savingSubmissionId === row.form.id ? 'Saving...' : 'Save' }}</button><button class="icon-action" type="button" [attr.aria-label]="submittingFormId === row.form.id ? 'Submitting Form Review' : 'Submit Form Review back'" [title]="submittingFormId === row.form.id ? 'Submitting Form Review' : 'Submit Form Review back'" [disabled]="submittingFormId === row.form.id" (click)="$event.preventDefault(); $event.stopPropagation(); submitSubmission(row)">{{ submittingFormId === row.form.id ? 'Submitting...' : 'Submit back' }}</button><button class="icon-action" type="button" [attr.aria-label]="activeAssistFormId === row.form.id ? 'Close IR Assist' : 'Ask IR Assist'" [title]="activeAssistFormId === row.form.id ? 'Close IR Assist' : 'Ask IR Assist'" (click)="$event.preventDefault(); $event.stopPropagation(); activeAssistFormId === row.form.id ? closeIrAssist() : openIrAssist(row)">{{ activeAssistFormId === row.form.id ? 'Close Assist' : 'Ask IR Assist' }}</button></div></summary>
                 <div class="released-form-preview"><div class="client-message-field"><span>Custom message to client</span><div class="client-message-readonly">{{ clientMessage(row.form) || 'No custom message provided.' }}</div></div>
                   @for (node of (row.form.form_snapshot?.layout_tree ?? []); track node.order) { @if (node.field) { <app-field-live-preview [field]="node.field" [compact]="true" [initialValue]="fieldValue(row.form, node.field)" (valueChange)="captureFieldValue(row.form, node.field, $event)"></app-field-live-preview> } }
                 </div>
@@ -54,5 +54,19 @@
         }
       </section>
     }
+  }
+  @if (activeAssistIr) {
+    <section class="floating-assist" [class.minimized]="isAssistMinimized" [class.positioned]="assistPosition" [class.dragging]="isAssistDragging" [style.left.px]="assistPosition?.left" [style.top.px]="assistPosition?.top" aria-label="Floating IR Assist">
+      <div class="floating-assist-bar" (pointerdown)="startAssistDrag($event)">
+        <div class="floating-assist-drag-handle"><span>IR Assist</span><strong>{{ activeAssistIr.ir_number }}</strong></div>
+        <div class="floating-assist-actions" (pointerdown)="$event.stopPropagation()">
+          <button type="button" [attr.aria-label]="isAssistMinimized ? 'Restore IR Assist' : 'Minimize IR Assist'" (click)="toggleAssistMinimized()">{{ isAssistMinimized ? 'Restore' : 'Minimize' }}</button>
+          <button type="button" aria-label="Close IR Assist" (click)="closeIrAssist()">Close</button>
+        </div>
+      </div>
+      <div class="floating-assist-body">
+        <app-tps-ir-assist [ir]="activeAssistIr" [autoLoadContextKey]="activeAssistContextKey" [allowFormAssignment]="false"></app-tps-ir-assist>
+      </div>
+    </section>
   }
 </main>

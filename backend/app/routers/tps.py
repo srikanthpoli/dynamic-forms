@@ -340,17 +340,14 @@ def assist_implementation_request(
 
     result = run_tps_ir_assist(payload.prompt, session["messages"], session["ir_context"])
     session["messages"] = result["messages"]
-    pending_form = (
-        result.get("published_forms", [None])[0]
-        if result.get("published_forms") and not result.get("show_all_forms")
-        else None
-    )
+    pending_form = result.get("pending_form")
     session["pending_form"] = pending_form
     save_tps_ir_session(payload.session_id, session)
     return TpsIrAssistResponse(
         assistant_message=result["assistant_message"],
         published_forms=result.get("published_forms", []),
         pending_form=pending_form,
+        show_form_tools=result.get("show_form_tools", False),
     )
 
 
