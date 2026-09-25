@@ -15,6 +15,7 @@ from app.schemas.field import (
     FieldPublishRequest,
     FieldTemplateOut,
 )
+from app.vectorstore.store import delete_published_field, upsert_published_field
 
 router = APIRouter(prefix="/api/fields", tags=["fields"])
 logger = logging.getLogger(__name__)
@@ -31,6 +32,9 @@ def generate_field(payload: FieldGenerateRequest):
     session = get_session(payload.session_id)
     try:
         result = run_field_builder(payload.prompt, session["messages"], payload.field_context)
+    except ValueError as exc:
+        logger.exception("POST /api/fields/generate capability references unavailable")
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception:
         logger.exception("POST /api/fields/generate failed session_id=%s", payload.session_id)
         raise
@@ -73,6 +77,7 @@ def publish_field(payload: FieldPublishRequest, db: Session = Depends(get_db)):
     db.add(template)
     db.commit()
     db.refresh(template)
+    upsert_published_field(template)
     logger.info("POST /api/fields/publish completed template_id=%s", template.id)
     return template
 
@@ -107,6 +112,7 @@ def override_field(field_id: UUID, payload: FieldOverrideRequest, db: Session = 
     template.api_config = payload.api_config
     db.commit()
     db.refresh(template)
+    upsert_published_field(template)
     logger.info("PUT /api/fields/%s completed", field_id)
     return template
 
@@ -121,6 +127,7 @@ def delete_field(field_id: UUID, db: Session = Depends(get_db)):
 
     db.delete(template)
     db.commit()
+    delete_published_field(str(field_id))
     logger.info("DELETE /api/fields/%s completed", field_id)
     return {"status": "deleted", "field_id": str(field_id)}
 

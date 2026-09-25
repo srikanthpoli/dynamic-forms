@@ -6,6 +6,7 @@ import { FieldTemplate } from '../../../core/models/field.models';
 import { FieldPromptPanelComponent } from '../field-prompt-panel/field-prompt-panel';
 import { FieldPreviewComponent } from '../field-preview/field-preview';
 import { FieldLibraryComponent } from '../field-library/field-library';
+import { createSessionId } from '../../../core/utils/session-id';
 
 @Component({
   selector: 'app-field-builder-page',
@@ -19,7 +20,7 @@ export class FieldBuilderPageComponent implements OnInit {
   private readonly api = inject(FieldBuilderApiService);
   private readonly changeDetector = inject(ChangeDetectorRef);
   private readonly route = inject(ActivatedRoute);
-  sessionId = `field-${crypto.randomUUID()}`;
+  sessionId = createSessionId('field');
   fields: FieldTemplate[] = [];
   messages: { role: 'user' | 'agent'; text: string }[] = [];
   draft: FieldTemplate | null = null;
@@ -40,7 +41,7 @@ export class FieldBuilderPageComponent implements OnInit {
   }
 
   selectField(field: FieldTemplate): void {
-    this.sessionId = `field-edit-${crypto.randomUUID()}`;
+    this.sessionId = createSessionId('field-edit');
     this.draft = { ...field };
     this.isEditing = true;
     this.error = '';
@@ -49,7 +50,7 @@ export class FieldBuilderPageComponent implements OnInit {
   }
 
   startNewSession(): void {
-    this.sessionId = `field-${crypto.randomUUID()}`;
+    this.sessionId = createSessionId('field');
     this.draft = null;
     this.messages = [];
     this.isEditing = false;
@@ -110,7 +111,8 @@ export class FieldBuilderPageComponent implements OnInit {
       error: error => {
         this.error = error?.name === 'TimeoutError'
           ? 'The Field Builder took too long to respond. Check the backend logs and try again.'
-          : 'The Field Builder could not reach the backend. Check that FastAPI is running on port 8000.';
+          : error?.error?.detail
+            ?? 'The Field Builder could not reach the backend. Check that FastAPI is running on port 8000.';
         this.changeDetector.markForCheck();
       },
     });

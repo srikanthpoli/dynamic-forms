@@ -13,12 +13,20 @@ from pathlib import Path
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEmbeddings
+from sqlalchemy.orm import Session
 
 from app.config import get_settings
+from app.db.models import FieldTemplate, FormDefinition, FormVersion
 
 _embeddings: HuggingFaceEmbeddings | None = None
 _vectorstore: Chroma | None = None
+_field_store: Chroma | None = None
+_form_store: Chroma | None = None
 logger = logging.getLogger(__name__)
+
+SPEC_COLLECTION = "angular_material_spec"
+FIELD_COLLECTION = "published_fields"
+FORM_COLLECTION = "published_forms"
 
 
 def get_embeddings() -> HuggingFaceEmbeddings:
@@ -49,11 +57,11 @@ def _spec_to_documents(spec_path: str) -> list[Document]:
     return docs
 
 
-def _get_store(settings) -> Chroma:
+def _get_store(settings, collection_name: str) -> Chroma:
     persist_dir = Path(settings.chroma_persist_dir)
     persist_dir.mkdir(parents=True, exist_ok=True)
     return Chroma(
-        collection_name="angular_material_spec",
+        collection_name=collection_name,
         embedding_function=get_embeddings(),
         persist_directory=str(persist_dir),
     )
@@ -68,7 +76,7 @@ def build_or_refresh_index() -> int:
     docs = _spec_to_documents(settings.material_spec_path)
     logger.info("Vector refresh loaded documents=%d", len(docs))
 
-    store = _get_store(settings)
+    store = _get_store(settings, SPEC_COLLECTION)
     existing_ids = store.get()["ids"]
     logger.info("Vector refresh removing existing_documents=%d", len(existing_ids))
     if existing_ids:
@@ -84,5 +92,125 @@ def build_or_refresh_index() -> int:
 def get_retriever(k: int = 4):
     global _vectorstore
     if _vectorstore is None:
-        _vectorstore = _get_store(get_settings())
+        _vectorstore = _get_store(get_settings(), SPEC_COLLECTION)
     return _vectorstore.as_retriever(search_kwargs={"k": k})
+
+
+def _field_document(field: FieldTemplate) -> Document:
+    content = (
+        f"published field name: {field.name}\n"
+        f"label: {field.label}\n"
+        f"field type: {field.field_type}\n"
+        f"validation rules: {json.dumps(field.validation_rules)}\n"
+        f"validation messages: {json.dumps(field.validation_messages)}\n"
+        f"angular configuration: {json.dumps(field.angular_config)}\n"
+        f"api configuration: {json.dumps(field.api_config)}"
+    )
+    return Document(
+        page_content=content,
+        metadata={"field_id": str(field.id), "name": field.name, "field_type": field.field_type},
+    )
+
+
+def _form_document(version: FormVersion, definition: FormDefinition) -> Document:
+    fields = [node.get("field", {}) for node in version.layout_tree or []]
+    labels = [field.get("label") for field in fields if field.get("label")]
+    names = [field.get("name") for field in fields if field.get("name")]
+    types = [field.get("field_type") for field in fields if field.get("field_type")]
+    content = (
+        f"published form title: {definition.title}\n"
+        f"description: {definition.description or ''}\n"
+        f"version: {version.version_number}\n"
+        f"field labels: {', '.join(labels)}\n"
+        f"field names: {', '.join(names)}\n"
+        f"field types: {', '.join(types)}"
+    )
+    return Document(
+        page_content=content,
+        metadata={
+            "form_id": str(definition.id),
+            "version_id": str(version.id),
+            "title": definition.title,
+            "version_number": version.version_number,
+        },
+    )
+
+
+def _replace_documents(store: Chroma, documents: list[Document], ids: list[str]) -> int:
+    existing_ids = store.get()["ids"]
+    if existing_ids:
+        store.delete(ids=existing_ids)
+    if documents:
+        store.add_documents(documents, ids=ids)
+    return len(documents)
+
+
+def refresh_published_fields_index(db: Session) -> int:
+    global _field_store
+    store = _get_store(get_settings(), FIELD_COLLECTION)
+    fields = db.query(FieldTemplate).all()
+    count = _replace_documents(store, [_field_document(field) for field in fields], [str(field.id) for field in fields])
+    _field_store = store
+    logger.info("Published field index refreshed documents=%d", count)
+    return count
+
+
+def refresh_published_forms_index(db: Session) -> int:
+    global _form_store
+    store = _get_store(get_settings(), FORM_COLLECTION)
+    rows = (
+        db.query(FormVersion, FormDefinition)
+        .join(FormDefinition, FormDefinition.id == FormVersion.form_id)
+        .filter(FormVersion.status == "published")
+        .all()
+    )
+    count = _replace_documents(
+        store,
+        [_form_document(version, definition) for version, definition in rows],
+        [str(version.id) for version, _ in rows],
+    )
+    _form_store = store
+    logger.info("Published form index refreshed documents=%d", count)
+    return count
+
+
+def upsert_published_field(field: FieldTemplate) -> None:
+    global _field_store
+    store = _field_store or _get_store(get_settings(), FIELD_COLLECTION)
+    store.upsert(documents=[_field_document(field)], ids=[str(field.id)])
+    _field_store = store
+
+
+def delete_published_field(field_id: str) -> None:
+    global _field_store
+    store = _field_store or _get_store(get_settings(), FIELD_COLLECTION)
+    if str(field_id) in store.get()["ids"]:
+        store.delete(ids=[str(field_id)])
+    _field_store = store
+
+
+def upsert_published_form(version: FormVersion, definition: FormDefinition) -> None:
+    global _form_store
+    store = _form_store or _get_store(get_settings(), FORM_COLLECTION)
+    store.upsert(documents=[_form_document(version, definition)], ids=[str(version.id)])
+    _form_store = store
+
+
+def delete_published_form(version_id: str) -> None:
+    global _form_store
+    store = _form_store or _get_store(get_settings(), FORM_COLLECTION)
+    if str(version_id) in store.get()["ids"]:
+        store.delete(ids=[str(version_id)])
+    _form_store = store
+
+
+def get_published_field_retriever(k: int = 4):
+    global _field_store
+    _field_store = _field_store or _get_store(get_settings(), FIELD_COLLECTION)
+    return _field_store.as_retriever(search_kwargs={"k": k})
+
+
+def get_published_form_retriever(k: int = 4):
+    global _form_store
+    _form_store = _form_store or _get_store(get_settings(), FORM_COLLECTION)
+    return _form_store.as_retriever(search_kwargs={"k": k})

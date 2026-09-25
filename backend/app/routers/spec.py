@@ -1,10 +1,16 @@
 import logging
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from app.capabilities.generator import OFFICIAL_DOCS, generate_capabilities
-from app.vectorstore.store import build_or_refresh_index
+from app.db.session import get_db
+from app.vectorstore.store import (
+    build_or_refresh_index,
+    refresh_published_fields_index,
+    refresh_published_forms_index,
+)
+from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/api/spec", tags=["spec"])
 logger = logging.getLogger(__name__)
@@ -31,6 +37,36 @@ def refresh_spec_index():
         raise
     logger.info("POST /api/spec/refresh completed documents_indexed=%d", count)
     return {"status": "success", "documents_indexed": count}
+
+
+@router.post("/refresh-fields-index")
+def refresh_published_fields(db: Session = Depends(get_db)):
+    """Rebuild the semantic index from all published field templates."""
+    count = refresh_published_fields_index(db)
+    return {"status": "success", "index": "published_fields", "documents_indexed": count}
+
+
+@router.post("/refresh-forms-index")
+def refresh_published_forms(db: Session = Depends(get_db)):
+    """Rebuild the semantic index from all published form versions."""
+    count = refresh_published_forms_index(db)
+    return {"status": "success", "index": "published_forms", "documents_indexed": count}
+
+
+@router.post("/refresh-all-indexes")
+def refresh_all_indexes(db: Session = Depends(get_db)):
+    """Rebuild Angular capability, published field, and published form indexes."""
+    capability_count = build_or_refresh_index()
+    field_count = refresh_published_fields_index(db)
+    form_count = refresh_published_forms_index(db)
+    return {
+        "status": "success",
+        "indexes": {
+            "angular_material_spec": capability_count,
+            "published_fields": field_count,
+            "published_forms": form_count,
+        },
+    }
 
 
 @router.post("/generate-capabilities")

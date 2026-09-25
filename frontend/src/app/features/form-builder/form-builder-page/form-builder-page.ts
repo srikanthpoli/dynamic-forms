@@ -10,6 +10,7 @@ import { FormPromptPanelComponent } from '../form-prompt-panel/form-prompt-panel
 import { FormPreviewComponent } from '../form-preview/form-preview';
 import { FormLibraryComponent } from '../form-library/form-library';
 import { FieldLibraryComponent } from '../../field-builder/field-library/field-library';
+import { createSessionId } from '../../../core/utils/session-id';
 
 @Component({
   selector: 'app-form-builder-page',
@@ -25,7 +26,7 @@ export class FormBuilderPageComponent implements OnInit {
   private readonly changeDetector = inject(ChangeDetectorRef);
   private readonly router = inject(Router);
 
-  sessionId = `form-${crypto.randomUUID()}`;
+  sessionId = createSessionId('form');
   forms: FormDefinition[] = [];
   fields: FieldTemplate[] = [];
   messages: { role: 'user' | 'agent'; text: string }[] = [];
@@ -54,7 +55,7 @@ export class FormBuilderPageComponent implements OnInit {
   }
 
   selectForm(form: FormDefinition): void {
-    this.sessionId = `form-edit-${crypto.randomUUID()}`;
+    this.sessionId = createSessionId('form-edit');
     this.draft = null;
     this.isEditing = true;
     this.error = '';
@@ -67,7 +68,7 @@ export class FormBuilderPageComponent implements OnInit {
   }
 
   startNewSession(): void {
-    this.sessionId = `form-${crypto.randomUUID()}`;
+    this.sessionId = createSessionId('form');
     this.draft = null;
     this.messages = [];
     this.isEditing = false;

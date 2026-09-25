@@ -16,7 +16,7 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, System
 from langgraph.graph import END, START, StateGraph
 
 from app.llm.provider import get_chat_model
-from app.vectorstore.store import get_retriever
+from app.vectorstore.store import build_or_refresh_index, get_retriever
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +43,15 @@ def _retrieve_context(state: FieldBuilderState) -> FieldBuilderState:
     logger.info("Field agent retrieval started history_messages=%d", len(state["messages"]))
     retriever = get_retriever()
     docs = retriever.invoke(state["prompt"])
+    if not docs:
+        logger.warning("Field agent retrieval returned zero documents; rebuilding capability index")
+        build_or_refresh_index()
+        docs = get_retriever().invoke(state["prompt"])
+    if not docs:
+        raise ValueError(
+            "No Angular Material capability references are available. "
+            "Refresh the capability index before generating a field."
+        )
     state["spec_context"] = "\n---\n".join(d.page_content for d in docs)
     logger.info("Field agent retrieval completed documents=%d", len(docs))
     return state

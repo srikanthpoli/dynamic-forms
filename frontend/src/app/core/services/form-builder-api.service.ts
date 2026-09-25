@@ -2,11 +2,12 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { FormBuildResponse, FormDefinition, FormDefinitionJson, FormVersion, PublishedForm } from '../models/form.models';
+import { apiConfig } from '../config/api.config';
 
 @Injectable({ providedIn: 'root' })
 export class FormBuilderApiService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = 'http://127.0.0.1:8000/api';
+  private readonly baseUrl = apiConfig.baseUrl;
 
   buildForm(sessionId: string, prompt: string, formContext?: FormDefinitionJson | null): Observable<FormBuildResponse> {
     return this.http.post<FormBuildResponse>(`${this.baseUrl}/forms/build`, {

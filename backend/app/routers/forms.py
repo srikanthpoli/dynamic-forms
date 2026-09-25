@@ -26,6 +26,7 @@ from app.schemas.form import (
     FormDefinitionVersionUpdate,
     FormVersionCreate,
 )
+from app.vectorstore.store import delete_published_form, refresh_published_forms_index, upsert_published_form
 
 router = APIRouter(prefix="/api/forms", tags=["forms"])
 logger = logging.getLogger(__name__)
@@ -189,6 +190,7 @@ def update_form_definition(form_id: str, payload: FormDefinitionUpdate, db: Sess
     definition.description = payload.description
     db.commit()
     db.refresh(definition)
+    refresh_published_forms_index(db)
     return definition
 
 
@@ -478,6 +480,9 @@ def publish_form_version(form_id: str, version_id: str, db: Session = Depends(ge
         raise HTTPException(status_code=404, detail="Form version not found")
     version.status = "published"
     db.commit()
+    definition = db.query(FormDefinition).filter(FormDefinition.id == version.form_id).first()
+    if definition:
+        upsert_published_form(version, definition)
     logger.info("POST /api/forms/%s/versions/%s/publish completed", form_id, version_id)
     return {"status": "published", "version_id": version_id}
 
@@ -496,5 +501,6 @@ def delete_form_version(form_id: str, version_id: str, db: Session = Depends(get
 
     db.delete(version)
     db.commit()
+    delete_published_form(version_id)
     logger.info("DELETE /api/forms/%s/versions/%s completed", form_id, version_id)
     return {"status": "deleted", "version_id": version_id}

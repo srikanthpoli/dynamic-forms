@@ -314,6 +314,24 @@ Expected response:
 
 The document count depends on the number of supported fields in `app/data/angular_material_capabilities.json`. The first refresh may download the local embedding model.
 
+### Refresh published field and form indexes
+
+The application keeps separate Chroma collections for:
+
+- Angular Material capabilities: `angular_material_spec`
+- Published field templates: `published_fields`
+- Published form versions: `published_forms`
+
+PostgreSQL remains the source of truth. Use these endpoints to rebuild the semantic indexes:
+
+```text
+POST /api/spec/refresh-fields-index
+POST /api/spec/refresh-forms-index
+POST /api/spec/refresh-all-indexes
+```
+
+The first endpoint indexes all rows from `field_templates`. The second indexes published form versions and their embedded field snapshots. The third rebuilds all three collections and returns document counts.
+
 ## 3. Regenerate capabilities from official Angular Material documentation
 
 Endpoint: `POST /api/spec/generate-capabilities`

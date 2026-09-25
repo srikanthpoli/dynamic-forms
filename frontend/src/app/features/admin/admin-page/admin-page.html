@@ -1,0 +1,29 @@
+<main class="admin-page">
+  <section class="page-intro">
+    <div>
+      <span class="breadcrumb">Workspace / Admin</span>
+      <h1>Keep search knowledge current.</h1>
+      <p>Refresh the indexes used by Field Builder, Form Builder, and the future form orchestration workflow.</p>
+    </div>
+    <div class="admin-badge"><span></span> Maintenance tools</div>
+  </section>
+
+  <section class="notice">
+    <span class="notice-mark">i</span>
+    <p>PostgreSQL remains the source of truth. These actions rebuild the local Chroma indexes from the current capabilities, published fields, and published forms.</p>
+  </section>
+
+  @if (lastMessage) { <div class="success-message">{{ lastMessage }}</div> }
+  @if (error) { <div class="error-message">{{ error }}</div> }
+
+  <section class="actions-grid">
+    @for (action of actions; track action.key) {
+      <article class="action-card" [class]="action.tone">
+        <div class="card-topline"><span class="index-mark">{{ action.key === 'all' ? 'ALL' : action.key === 'generate' ? 'AI' : 'DB' }}</span><span class="state">{{ runningKey === action.key ? 'Running' : 'Ready' }}</span></div>
+        <h2>{{ action.title }}</h2>
+        <p>{{ action.description }}</p>
+        <button type="button" [disabled]="!!runningKey" (click)="run(action)">{{ runningKey === action.key ? 'Working...' : action.action }}</button>
+      </article>
+    }
+  </section>
+</main>
