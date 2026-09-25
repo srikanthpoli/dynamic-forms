@@ -374,7 +374,50 @@ Use this section when the EC2 instance, backend service, Nginx, and database are
 
 You can refresh only the backend, only the frontend, or both.
 
-### 1. Connect to EC2
+### Option A: Refresh with GitHub Actions pipeline
+
+The repository includes a manual GitHub Actions workflow for this refresh-only path:
+
+```text
+.github/workflows/refresh-aws-deployment.yml
+```
+
+It keeps the same running ports and services:
+
+- Nginx stays on `80`/`443`.
+- FastAPI stays on `127.0.0.1:8000`.
+- The existing `dynamic-forms-api` systemd service is restarted.
+- The existing `/var/www/dynamic-forms` Nginx frontend directory is replaced.
+
+Add these GitHub repository secrets before running the workflow:
+
+```text
+AWS_EC2_HOST=18.209.45.74
+AWS_EC2_USER=ubuntu
+AWS_EC2_PORT=22
+AWS_EC2_SSH_KEY=PASTE_PRIVATE_PEM_FILE_CONTENTS
+```
+
+`AWS_EC2_USER` and `AWS_EC2_PORT` have defaults in the workflow, but setting them explicitly makes the deployment easier to inspect later.
+
+The EC2 security group must allow SSH from the runner that executes the workflow. If you use GitHub-hosted runners, SSH cannot be restricted only to your laptop IP. Prefer a self-hosted runner or a tightly controlled temporary SSH rule; do not leave port `22` open to `0.0.0.0/0` longer than necessary.
+
+To run it:
+
+1. Open GitHub repository.
+2. Go to **Actions**.
+3. Select **Refresh AWS Deployment**.
+4. Click **Run workflow**.
+5. Choose one target:
+  - `backend`: pull latest code on EC2, run `uv sync`, restart FastAPI, check `/health`.
+  - `frontend`: build Angular in GitHub Actions, upload the zip to EC2, replace Nginx files, restart Nginx.
+  - `both`: run backend refresh first, then frontend refresh.
+
+The backend step uses `git pull --ff-only` on EC2. If the EC2 checkout has local changes, the workflow fails instead of overwriting them.
+
+### Option B: Refresh manually
+
+#### 1. Connect to EC2
 
 From Windows PowerShell:
 
@@ -382,7 +425,7 @@ From Windows PowerShell:
 ssh -i "C:\Users\sripo\Downloads\dynamicforms_aws.pem" ubuntu@18.209.45.74
 ```
 
-### 2. Refresh backend code only
+#### 2. Refresh backend code only
 
 Run this when Python/FastAPI/backend files changed.
 
@@ -419,7 +462,7 @@ If the backend fails:
 sudo journalctl -u dynamic-forms-api -n 100 --no-pager
 ```
 
-### 3. Refresh frontend code only
+#### 3. Refresh frontend code only
 
 Run this when Angular/frontend files changed.
 
@@ -467,7 +510,7 @@ sudo nginx -t
 sudo tail -n 80 /var/log/nginx/error.log
 ```
 
-### 4. Refresh both backend and frontend
+#### 4. Refresh both backend and frontend
 
 When both backend and frontend changed:
 

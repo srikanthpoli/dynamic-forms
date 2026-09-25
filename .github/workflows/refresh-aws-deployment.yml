@@ -1,0 +1,109 @@
+name: Refresh AWS Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "What should be refreshed on the existing EC2 deployment?"
+        required: true
+        default: both
+        type: choice
+        options:
+          - backend
+          - frontend
+          - both
+
+concurrency:
+  group: refresh-aws-deployment
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    name: Refresh existing EC2 deployment
+    runs-on: ubuntu-latest
+    env:
+      EC2_HOST: ${{ secrets.AWS_EC2_HOST }}
+      EC2_USER: ${{ secrets.AWS_EC2_USER || 'ubuntu' }}
+      EC2_PORT: ${{ secrets.AWS_EC2_PORT || '22' }}
+      SSH_KEY_PATH: /tmp/dynamic_forms_aws_key
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        run: |
+          set -euo pipefail
+          test -n "$EC2_HOST"
+          test -n "${{ secrets.AWS_EC2_SSH_KEY }}"
+          printf '%s\n' "${{ secrets.AWS_EC2_SSH_KEY }}" > "$SSH_KEY_PATH"
+          chmod 600 "$SSH_KEY_PATH"
+          mkdir -p ~/.ssh
+          ssh-keyscan -p "$EC2_PORT" -H "$EC2_HOST" >> ~/.ssh/known_hosts
+
+      - name: Refresh backend on EC2
+        if: ${{ github.event.inputs.target == 'backend' || github.event.inputs.target == 'both' }}
+        run: |
+          set -euo pipefail
+          ssh -i "$SSH_KEY_PATH" -p "$EC2_PORT" "$EC2_USER@$EC2_HOST" <<'EOF'
+            set -euo pipefail
+            cd ~/dynamic-forms
+            git fetch origin master
+            git checkout master
+            git pull --ff-only origin master
+
+            cd ~/dynamic-forms/backend
+            source "$HOME/.local/bin/env"
+            source .venv/bin/activate
+            uv sync
+
+            sudo systemctl restart dynamic-forms-api
+            sudo systemctl --no-pager --full status dynamic-forms-api
+            curl --fail http://127.0.0.1:8000/health
+          EOF
+
+      - name: Set up Node.js
+        if: ${{ github.event.inputs.target == 'frontend' || github.event.inputs.target == 'both' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build frontend
+        if: ${{ github.event.inputs.target == 'frontend' || github.event.inputs.target == 'both' }}
+        working-directory: frontend
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run build
+          cd dist/dynamic-forms-frontend/browser
+          zip -r "$RUNNER_TEMP/dynamic-forms-ui.zip" .
+
+      - name: Upload frontend build to EC2
+        if: ${{ github.event.inputs.target == 'frontend' || github.event.inputs.target == 'both' }}
+        run: |
+          set -euo pipefail
+          scp -i "$SSH_KEY_PATH" -P "$EC2_PORT" "$RUNNER_TEMP/dynamic-forms-ui.zip" "$EC2_USER@$EC2_HOST:/tmp/dynamic-forms-ui.zip"
+
+      - name: Publish frontend on EC2
+        if: ${{ github.event.inputs.target == 'frontend' || github.event.inputs.target == 'both' }}
+        run: |
+          set -euo pipefail
+          ssh -i "$SSH_KEY_PATH" -p "$EC2_PORT" "$EC2_USER@$EC2_HOST" <<'EOF'
+            set -euo pipefail
+            rm -rf /tmp/dynamic-forms-ui-new
+            mkdir -p /tmp/dynamic-forms-ui-new
+            unzip -q /tmp/dynamic-forms-ui.zip -d /tmp/dynamic-forms-ui-new
+
+            sudo mkdir -p /var/www/dynamic-forms
+            sudo rm -rf /var/www/dynamic-forms/*
+            sudo cp -r /tmp/dynamic-forms-ui-new/* /var/www/dynamic-forms/
+
+            sudo nginx -t
+            sudo systemctl restart nginx
+            curl --fail http://127.0.0.1/
+          EOF
