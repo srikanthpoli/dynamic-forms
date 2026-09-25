@@ -400,7 +400,7 @@ AWS_EC2_SSH_KEY=PASTE_PRIVATE_PEM_FILE_CONTENTS
 
 `AWS_EC2_USER` and `AWS_EC2_PORT` have defaults in the workflow, but setting them explicitly makes the deployment easier to inspect later.
 
-The EC2 security group must allow SSH from the runner that executes the workflow. If you use GitHub-hosted runners, SSH cannot be restricted only to your laptop IP. Prefer a self-hosted runner or a tightly controlled temporary SSH rule; do not leave port `22` open to `0.0.0.0/0` longer than necessary.
+The EC2 security group must allow SSH from the runner that executes the workflow. If you use GitHub-hosted runners, SSH cannot be restricted only to your laptop IP. If the workflow fails at `Configure SSH` or `ssh-keyscan`, port `22` is blocked from the GitHub runner. For a quick test, temporarily allow SSH from `0.0.0.0/0`, run the workflow, then restrict it again immediately. For a safer long-term setup, use a self-hosted runner or automate a temporary security-group rule for GitHub runner IPs.
 
 To run it:
 
@@ -413,7 +413,7 @@ To run it:
   - `frontend`: build Angular in GitHub Actions, upload the zip to EC2, replace Nginx files, restart Nginx.
   - `both`: run backend refresh first, then frontend refresh.
 
-The backend step uses `git pull --ff-only` on EC2. If the EC2 checkout has local changes, the workflow fails instead of overwriting them.
+The backend step syncs the EC2 checkout to `origin/master`. If EC2 has local commits, the workflow first saves the current EC2 `HEAD` to a branch named `deploy-backup-YYYYMMDDHHMMSS`, then resets the deployment checkout to `origin/master`. If EC2 has uncommitted tracked changes, the workflow fails and prints `git status --short` so you can commit, stash, or revert them manually.
 
 ### Option B: Refresh manually
 

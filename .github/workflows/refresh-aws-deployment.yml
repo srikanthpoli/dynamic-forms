@@ -42,7 +42,12 @@ jobs:
           printf '%s\n' "${{ secrets.AWS_EC2_SSH_KEY }}" > "$SSH_KEY_PATH"
           chmod 600 "$SSH_KEY_PATH"
           mkdir -p ~/.ssh
-          ssh-keyscan -p "$EC2_PORT" -H "$EC2_HOST" >> ~/.ssh/known_hosts
+          if ! timeout 15 bash -c "</dev/tcp/$EC2_HOST/$EC2_PORT"; then
+            echo "Could not reach $EC2_HOST:$EC2_PORT from the GitHub runner."
+            echo "Check the EC2 security group inbound SSH rule. GitHub-hosted runners are not your laptop IP."
+            exit 1
+          fi
+          ssh-keyscan -T 15 -p "$EC2_PORT" -H "$EC2_HOST" >> ~/.ssh/known_hosts
 
       - name: Refresh backend on EC2
         if: ${{ github.event.inputs.target == 'backend' || github.event.inputs.target == 'both' }}
@@ -53,7 +58,17 @@ jobs:
             cd ~/dynamic-forms
             git fetch origin master
             git checkout master
-            git pull --ff-only origin master
+            if ! git diff --quiet || ! git diff --cached --quiet; then
+              echo "EC2 checkout has uncommitted tracked changes. Commit, stash, or revert them before deployment."
+              git status --short
+              exit 1
+            fi
+            if ! git merge-base --is-ancestor HEAD origin/master; then
+              backup_branch="deploy-backup-$(date +%Y%m%d%H%M%S)"
+              git branch "$backup_branch" HEAD
+              echo "EC2 checkout had local commits. Saved current HEAD to $backup_branch before syncing to origin/master."
+            fi
+            git reset --hard origin/master
 
             cd ~/dynamic-forms/backend
             source "$HOME/.local/bin/env"
