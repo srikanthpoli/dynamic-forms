@@ -10,125 +10,14 @@ Browser -> Nginx on EC2 -> Angular frontend
 
 Do not commit `.env`, private keys, passwords, or API keys.
 
-## Refresh an existing AWS deployment
+Use one of these two sections:
 
-Use this section when the EC2 instance, backend service, Nginx, and database are already set up. This refreshes code only; it does not recreate AWS resources.
+- **Section 1**: full end-to-end deployment for a new EC2/server setup.
+- **Section 2**: refresh existing backend or frontend code while keeping the same running ports and services.
 
-### 1. Pull latest backend code on EC2
+## Section 1: Full end-to-end deployment
 
-From Windows PowerShell, connect to EC2:
-
-```powershell
-ssh -i "C:\Users\sripo\Downloads\dynamicforms_aws.pem" ubuntu@18.209.45.74
-```
-
-On EC2:
-
-```bash
-cd ~/dynamic-forms
-git pull origin master
-```
-
-### 2. Refresh backend dependencies and restart FastAPI
-
-```bash
-cd ~/dynamic-forms/backend
-source "$HOME/.local/bin/env"
-source .venv/bin/activate
-uv sync
-
-sudo systemctl restart dynamic-forms-api
-sudo systemctl status dynamic-forms-api
-```
-
-Backend health check:
-
-```bash
-curl http://127.0.0.1:8000/health
-```
-
-Expected:
-
-```json
-{"status":"ok"}
-```
-
-If the backend fails:
-
-```bash
-sudo journalctl -u dynamic-forms-api -n 100 --no-pager
-```
-
-### 3. Build the frontend locally
-
-On Windows PowerShell:
-
-```powershell
-cd "E:\Srikanth\Srikanth\Learning\Dynamic_Forms\frontend"
-npm install
-npm run build
-
-Compress-Archive `
-  -Path ".\dist\dynamic-forms-frontend\browser\*" `
-  -DestinationPath ".\dynamic-forms-ui.zip" `
-  -Force
-```
-
-Upload the built frontend to EC2:
-
-```powershell
-scp -i "C:\Users\sripo\Downloads\dynamicforms_aws.pem" `
-  ".\dynamic-forms-ui.zip" `
-  ubuntu@18.209.45.74:/tmp/dynamic-forms-ui.zip
-```
-
-### 4. Replace frontend files on EC2 and restart Nginx
-
-On EC2:
-
-```bash
-rm -rf /tmp/dynamic-forms-ui-new
-mkdir -p /tmp/dynamic-forms-ui-new
-unzip -q /tmp/dynamic-forms-ui.zip -d /tmp/dynamic-forms-ui-new
-
-sudo rm -rf /var/www/dynamic-forms/*
-sudo cp -r /tmp/dynamic-forms-ui-new/* /var/www/dynamic-forms/
-
-sudo nginx -t
-sudo systemctl restart nginx
-```
-
-### 5. Verify refreshed deployment
-
-On EC2:
-
-```bash
-curl http://127.0.0.1:8000/health
-curl http://127.0.0.1/api/forms/published
-```
-
-From browser:
-
-```text
-http://18.209.45.74/
-```
-
-Use a hard refresh after frontend replacement:
-
-```text
-Ctrl + Shift + R
-```
-
-If Nginx fails:
-
-```bash
-sudo nginx -t
-sudo tail -n 80 /var/log/nginx/error.log
-```
-
-## First-time deployment
-
-## 1. AWS resources
+### 1. AWS resources
 
 Create or verify:
 
@@ -142,7 +31,7 @@ Create or verify:
 
 Do not expose RDS port 5432 publicly. Port 8000 is only for temporary testing and should not be publicly exposed after Nginx is working.
 
-## 2. Connect to EC2 from Windows
+### 2. Connect to EC2 from Windows
 
 ```powershell
 ssh -i "C:\path\to\dynamicforms_aws.pem" ubuntu@YOUR_EC2_PUBLIC_IP
@@ -150,7 +39,7 @@ ssh -i "C:\path\to\dynamicforms_aws.pem" ubuntu@YOUR_EC2_PUBLIC_IP
 
 Use the current EC2 public IP. It can change after stop/start unless an Elastic IP is attached.
 
-## 3. Prepare EC2 storage
+### 3. Prepare EC2 storage
 
 The embedding model and PyTorch need memory and disk space. Use an EBS volume of at least 20 GB.
 
@@ -182,7 +71,7 @@ echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
 free -h
 ```
 
-## 4. Install EC2 packages
+### 4. Install EC2 packages
 
 ```bash
 sudo apt update
@@ -197,7 +86,7 @@ source "$HOME/.local/bin/env"
 uv --version
 ```
 
-## 5. Get the project
+### 5. Get the project
 
 ```bash
 cd ~
@@ -213,7 +102,7 @@ cd ~/dynamic-forms
 git pull
 ```
 
-## 6. Create the server environment file
+### 6. Create the server environment file
 
 The backend reads only a file named exactly `.env` in the `backend` directory:
 
@@ -243,7 +132,7 @@ If Nginx serves both frontend and API from the same origin, `CORS_ORIGINS` can u
 
 Never put real values in this documentation or Git.
 
-## 7. Install and run FastAPI
+### 7. Install and run FastAPI
 
 ```bash
 cd ~/dynamic-forms/backend
@@ -278,7 +167,7 @@ Expected:
 {"status":"ok"}
 ```
 
-## 8. Run FastAPI as a system service
+### 8. Run FastAPI as a system service
 
 Stop the temporary Uvicorn process with `Ctrl+C`, then create the service:
 
@@ -319,7 +208,7 @@ View logs:
 sudo journalctl -u dynamic-forms-api -f
 ```
 
-## 9. Build the Angular frontend locally
+### 9. Build the Angular frontend locally
 
 On Windows PowerShell:
 
@@ -342,7 +231,7 @@ The Angular API configuration uses:
 
 This lets Nginx proxy API calls without exposing port 8000 to browsers.
 
-## 10. Upload the frontend
+### 10. Upload the frontend
 
 From Windows PowerShell:
 
@@ -369,7 +258,7 @@ sudo mkdir -p /var/www/dynamic-forms
 sudo cp -r /tmp/dynamic-forms-ui-new/* /var/www/dynamic-forms/
 ```
 
-## 11. Configure Nginx
+### 11. Configure Nginx
 
 ```bash
 sudo nano /etc/nginx/sites-available/dynamic-forms
@@ -409,7 +298,7 @@ sudo systemctl enable --now nginx
 sudo systemctl restart nginx
 ```
 
-## 12. Verify the deployment
+### 12. Verify the deployment
 
 On EC2:
 
@@ -444,7 +333,7 @@ curl http://127.0.0.1:8000/health
 
 If the browser shows stale JavaScript, use DevTools with **Disable cache** and perform **Empty Cache and Hard Reload**.
 
-## 13. Refresh Chroma capabilities
+### 13. Refresh Chroma capabilities
 
 With FastAPI running:
 
@@ -454,7 +343,7 @@ curl -X POST http://127.0.0.1/api/spec/refresh
 
 This rebuilds the local Chroma index from `app/data/angular_material_capabilities.json`.
 
-## 14. HTTPS
+### 14. HTTPS
 
 For trusted HTTPS, use a domain pointing to the EC2 public IP:
 
@@ -465,7 +354,7 @@ sudo certbot --nginx -d forms.example.com
 
 Keep ports 80 and 443 open. Remove public port 8000 after Nginx works.
 
-## 15. Security checklist
+### 15. Security checklist
 
 - Rotate any API keys or database passwords that were exposed.
 - Keep `.env` out of Git.
@@ -474,3 +363,127 @@ Keep ports 80 and 443 open. Remove public port 8000 after Nginx works.
 - Restrict SSH port 22 to your current IP.
 - Expose only Nginx ports 80/443 in normal operation.
 - Set AWS billing alerts and monitor EBS, public IPv4, RDS, and EC2 usage.
+
+## Section 2: Refresh existing backend or frontend code
+
+Use this section when the EC2 instance, backend service, Nginx, and database are already set up. This keeps the same ports:
+
+- Nginx stays on `80`/`443`.
+- FastAPI stays on `127.0.0.1:8000`.
+- The browser keeps using the same public URL.
+
+You can refresh only the backend, only the frontend, or both.
+
+### 1. Connect to EC2
+
+From Windows PowerShell:
+
+```powershell
+ssh -i "C:\Users\sripo\Downloads\dynamicforms_aws.pem" ubuntu@18.209.45.74
+```
+
+### 2. Refresh backend code only
+
+Run this when Python/FastAPI/backend files changed.
+
+On EC2:
+
+```bash
+cd ~/dynamic-forms
+git pull origin master
+
+cd ~/dynamic-forms/backend
+source "$HOME/.local/bin/env"
+source .venv/bin/activate
+uv sync
+
+sudo systemctl restart dynamic-forms-api
+sudo systemctl status dynamic-forms-api
+```
+
+Backend health check:
+
+```bash
+curl http://127.0.0.1:8000/health
+```
+
+Expected:
+
+```json
+{"status":"ok"}
+```
+
+If the backend fails:
+
+```bash
+sudo journalctl -u dynamic-forms-api -n 100 --no-pager
+```
+
+### 3. Refresh frontend code only
+
+Run this when Angular/frontend files changed.
+
+On Windows PowerShell:
+
+```powershell
+cd "E:\Srikanth\Srikanth\Learning\Dynamic_Forms\frontend"
+npm install
+npm run build
+
+Compress-Archive `
+  -Path ".\dist\dynamic-forms-frontend\browser\*" `
+  -DestinationPath ".\dynamic-forms-ui.zip" `
+  -Force
+
+scp -i "C:\Users\sripo\Downloads\dynamicforms_aws.pem" `
+  ".\dynamic-forms-ui.zip" `
+  ubuntu@18.209.45.74:/tmp/dynamic-forms-ui.zip
+```
+
+On EC2:
+
+```bash
+rm -rf /tmp/dynamic-forms-ui-new
+mkdir -p /tmp/dynamic-forms-ui-new
+unzip -q /tmp/dynamic-forms-ui.zip -d /tmp/dynamic-forms-ui-new
+
+sudo rm -rf /var/www/dynamic-forms/*
+sudo cp -r /tmp/dynamic-forms-ui-new/* /var/www/dynamic-forms/
+
+sudo nginx -t
+sudo systemctl restart nginx
+```
+
+Use a browser hard refresh after frontend replacement:
+
+```text
+Ctrl + Shift + R
+```
+
+If Nginx fails:
+
+```bash
+sudo nginx -t
+sudo tail -n 80 /var/log/nginx/error.log
+```
+
+### 4. Refresh both backend and frontend
+
+When both backend and frontend changed:
+
+1. Run **Section 2.2 Refresh backend code only**.
+2. Run **Section 2.3 Refresh frontend code only**.
+3. Verify both through Nginx.
+
+On EC2:
+
+```bash
+curl http://127.0.0.1:8000/health
+curl http://127.0.0.1/api/forms/published
+```
+
+From browser:
+
+```text
+http://18.209.45.74/
+```
