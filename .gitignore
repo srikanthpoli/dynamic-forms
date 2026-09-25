@@ -28,3 +28,6 @@ backend/app/data/chroma/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Local/private backend certificates
+backend/certs/
