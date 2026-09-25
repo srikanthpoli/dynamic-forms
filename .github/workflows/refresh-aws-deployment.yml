@@ -77,7 +77,18 @@ jobs:
 
             sudo systemctl restart dynamic-forms-api
             sudo systemctl --no-pager --full status dynamic-forms-api
-            curl --fail http://127.0.0.1:8000/health
+            for attempt in $(seq 1 20); do
+              if curl --fail --silent --show-error http://127.0.0.1:8000/health; then
+                echo "Backend health check passed."
+                exit 0
+              fi
+              echo "Waiting for backend health check... attempt $attempt/20"
+              sleep 2
+            done
+
+            echo "Backend did not become healthy after restart. Recent logs:"
+            sudo journalctl -u dynamic-forms-api -n 100 --no-pager
+            exit 1
           EOF
 
       - name: Set up Node.js
