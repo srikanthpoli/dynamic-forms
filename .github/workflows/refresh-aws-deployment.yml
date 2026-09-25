@@ -53,7 +53,7 @@ jobs:
         if: ${{ github.event.inputs.target == 'backend' || github.event.inputs.target == 'both' }}
         run: |
           set -euo pipefail
-          ssh -i "$SSH_KEY_PATH" -p "$EC2_PORT" "$EC2_USER@$EC2_HOST" <<'EOF'
+          ssh -T -i "$SSH_KEY_PATH" -p "$EC2_PORT" "$EC2_USER@$EC2_HOST" <<'EOF'
             set -euo pipefail
             cd ~/dynamic-forms
             git fetch origin master
@@ -76,19 +76,23 @@ jobs:
             uv sync
 
             sudo systemctl restart dynamic-forms-api
-            sudo systemctl --no-pager --full status dynamic-forms-api
+            sudo systemctl is-active --quiet dynamic-forms-api
+            healthy=false
             for attempt in $(seq 1 20); do
               if curl --fail --silent --show-error http://127.0.0.1:8000/health; then
                 echo "Backend health check passed."
-                exit 0
+                healthy=true
+                break
               fi
               echo "Waiting for backend health check... attempt $attempt/20"
               sleep 2
             done
 
-            echo "Backend did not become healthy after restart. Recent logs:"
-            sudo journalctl -u dynamic-forms-api -n 100 --no-pager
-            exit 1
+            if [ "$healthy" != "true" ]; then
+              echo "Backend did not become healthy after restart. Recent logs:"
+              sudo journalctl -u dynamic-forms-api -n 100 --no-pager
+              exit 1
+            fi
           EOF
 
       - name: Set up Node.js
@@ -119,7 +123,7 @@ jobs:
         if: ${{ github.event.inputs.target == 'frontend' || github.event.inputs.target == 'both' }}
         run: |
           set -euo pipefail
-          ssh -i "$SSH_KEY_PATH" -p "$EC2_PORT" "$EC2_USER@$EC2_HOST" <<'EOF'
+          ssh -T -i "$SSH_KEY_PATH" -p "$EC2_PORT" "$EC2_USER@$EC2_HOST" <<'EOF'
             set -euo pipefail
             rm -rf /tmp/dynamic-forms-ui-new
             mkdir -p /tmp/dynamic-forms-ui-new
