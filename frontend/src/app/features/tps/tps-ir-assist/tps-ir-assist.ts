@@ -34,6 +34,7 @@ export class TpsIrAssistComponent implements OnChanges {
   error = '';
   publishedForms: TpsPublishedForm[] = [];
   pendingForm: TpsPublishedForm | null = null;
+  latestSubmittedForm: { form_title: string; version_number?: string | null } | null = null;
   private sessionId = createSessionId('tps-ir');
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -47,11 +48,15 @@ export class TpsIrAssistComponent implements OnChanges {
     if (!this.ir) return;
     this.isSending = true;
     this.error = '';
-    this.api.loadIrAssistantContext(this.ir.ir_number, this.sessionId, this.ir).subscribe({
-      next: () => {
+    this.api.loadIrAssistantContext(this.ir.ir_number, this.sessionId).subscribe({
+      next: response => {
         this.isContextLoaded = true;
         this.isSending = false;
-        this.messages = [{ role: 'system', text: `IR context loaded for ${this.ir!.ir_number} and ${this.ir!.customer_name}. Ask a question about this implementation request.` }];
+        this.latestSubmittedForm = response.latest_submitted_form;
+        const submittedFormMessage = this.latestSubmittedForm
+          ? ` Latest submitted form loaded: ${this.latestSubmittedForm.form_title}${this.latestSubmittedForm.version_number ? ` version ${this.latestSubmittedForm.version_number}` : ''}. You can ask me to compare it with the IR.`
+          : ' No submitted form is available for comparison yet.';
+        this.messages = [{ role: 'system', text: `IR context loaded for ${this.ir!.ir_number} and ${this.ir!.customer_name}.${submittedFormMessage}` }];
         this.changeDetector.markForCheck();
       },
       error: error => {
@@ -123,6 +128,7 @@ export class TpsIrAssistComponent implements OnChanges {
     this.isContextLoaded = false;
     this.pendingForm = null;
     this.publishedForms = [];
+    this.latestSubmittedForm = null;
     this.showFormTools = false;
     this.formUnavailable = false;
     this.error = '';
@@ -147,4 +153,5 @@ export class TpsIrAssistComponent implements OnChanges {
       .replace(/^- /gm, '• ')
       .replace(/\n/g, '<br>');
   }
+
 }

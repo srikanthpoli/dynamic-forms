@@ -93,7 +93,7 @@ class TpsIrAssistRequest(BaseModel):
 
 class TpsIrContextRequest(BaseModel):
     session_id: str
-    ir_context: TpsIrOut
+    ir_context: TpsIrOut | None = None
 
 
 class TpsIrAssistResponse(BaseModel):

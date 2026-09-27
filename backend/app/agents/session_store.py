@@ -24,6 +24,7 @@ class FormSession(TypedDict):
 class TpsIrSession(TypedDict):
     messages: list[BaseMessage]
     ir_context: dict | None
+    latest_submitted_form: dict | None
     pending_form: dict | None
 
 
@@ -66,8 +67,14 @@ def kill_form_session(session_id: str) -> bool:
 
 def get_tps_ir_session(session_id: str) -> TpsIrSession:
     if session_id not in _TPS_IR_SESSIONS:
-        _TPS_IR_SESSIONS[session_id] = {"messages": [], "ir_context": None, "pending_form": None}
+        _TPS_IR_SESSIONS[session_id] = {
+            "messages": [],
+            "ir_context": None,
+            "latest_submitted_form": None,
+            "pending_form": None,
+        }
     else:
+        _TPS_IR_SESSIONS[session_id].setdefault("latest_submitted_form", None)
         _TPS_IR_SESSIONS[session_id].setdefault("pending_form", None)
     return _TPS_IR_SESSIONS[session_id]
 

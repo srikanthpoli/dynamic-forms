@@ -1,5 +1,5 @@
 <section class="library-panel">
-  <div class="section-heading"><div><div class="eyebrow">Form library</div><h2>All forms</h2></div><span class="count">{{ forms.length | number: '2.0' }}</span></div>
+  <div class="section-heading"><div><div class="eyebrow">Form library</div><h2>All forms</h2></div><div class="section-actions"><span class="count">{{ forms.length | number: '2.0' }}</span><button class="new-form-button" type="button" (click)="newFormRequested.emit()">+ New form</button></div></div>
   @if (forms.length) {
     <div class="library-list">
       @for (form of forms; track form.id) {

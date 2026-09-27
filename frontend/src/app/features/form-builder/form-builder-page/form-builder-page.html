@@ -4,7 +4,7 @@
     <aside class="library-column">
       <details class="library-collapse" open>
         <summary>Form library ({{ forms.length }})</summary>
-        <app-form-library [forms]="forms" [versions]="versions" [selectedFormId]="currentFormId" [selectedVersionId]="selectedVersion?.id ?? null" (formSelected)="selectForm($event)" (versionSelected)="selectVersion($event)" (versionDeleted)="requestDeleteVersion($event)"></app-form-library>
+        <app-form-library [forms]="forms" [versions]="versions" [selectedFormId]="currentFormId" [selectedVersionId]="selectedVersion?.id ?? null" (formSelected)="selectForm($event)" (versionSelected)="selectVersion($event)" (versionDeleted)="requestDeleteVersion($event)" (newFormRequested)="startNewSession()"></app-form-library>
       </details>
       <details class="library-collapse">
         <summary>Field library ({{ fields.length }})</summary>

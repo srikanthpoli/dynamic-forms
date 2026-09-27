@@ -6,6 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.agents.tps_ir_assist_agent import run_tps_ir_assist
+from app.agents.tps_ir_assist_tools import load_latest_submitted_form
 from app.agents.session_store import get_tps_ir_session, save_tps_ir_session
 from app.db.models import FormDefinition, FormSubmission, FormVersion, IrForm, SubmissionEvent, TpsIrMain
 from app.db.session import get_db
@@ -328,21 +329,34 @@ def assist_implementation_request(
     db: Session = Depends(get_db),
 ):
     """Answer a question using stored IR context and the session conversation history."""
+    logger.info("POST /api/tps/irs/%s/assist started session_id=%s", ir_number, payload.session_id)
     ir = db.query(TpsIrMain).filter(TpsIrMain.ir_number == ir_number).first()
     if not ir:
         raise HTTPException(status_code=404, detail="Implementation request not found")
 
     session = get_tps_ir_session(payload.session_id)
-    if payload.ir_context is not None:
-        session["ir_context"] = payload.ir_context.model_dump()
     if not session["ir_context"]:
         raise HTTPException(status_code=409, detail="Load IR context before asking a question")
 
-    result = run_tps_ir_assist(payload.prompt, session["messages"], session["ir_context"])
+    session["ir_context"] = TpsIrOut.model_validate(ir).model_dump()
+    result = run_tps_ir_assist(
+        payload.prompt,
+        session["messages"],
+        session["ir_context"],
+        db,
+    )
+    if result.get("intent", {}).get("compare_latest_submission"):
+        session["latest_submitted_form"] = result.get("latest_submitted_form")
     session["messages"] = result["messages"]
     pending_form = result.get("pending_form")
     session["pending_form"] = pending_form
     save_tps_ir_session(payload.session_id, session)
+    logger.info(
+        "POST /api/tps/irs/%s/assist completed session_id=%s pending_form=%s",
+        ir_number,
+        payload.session_id,
+        bool(pending_form),
+    )
     return TpsIrAssistResponse(
         assistant_message=result["assistant_message"],
         published_forms=result.get("published_forms", []),
@@ -358,15 +372,31 @@ def load_ir_assistant_context(
     db: Session = Depends(get_db),
 ):
     """Load or replace the IR context for a TPS IR Assist session."""
+    logger.info("POST /api/tps/irs/%s/assist/context started session_id=%s", ir_number, payload.session_id)
     ir = db.query(TpsIrMain).filter(TpsIrMain.ir_number == ir_number).first()
     if not ir:
         raise HTTPException(status_code=404, detail="Implementation request not found")
-    if payload.ir_context.ir_number != ir_number:
-        raise HTTPException(status_code=422, detail="IR context does not match the requested IR")
-
     session = get_tps_ir_session(payload.session_id)
-    session["ir_context"] = payload.ir_context.model_dump()
+    session["ir_context"] = TpsIrOut.model_validate(ir).model_dump()
+    session["latest_submitted_form"] = load_latest_submitted_form(db, ir.id)
     session["messages"] = []
     session["pending_form"] = None
     save_tps_ir_session(payload.session_id, session)
-    return {"status": "context_loaded", "session_id": payload.session_id, "ir_number": ir_number}
+    latest_submission = session["latest_submitted_form"]
+    logger.info(
+        "IR Assist context loaded ir_number=%s session_id=%s latest_submitted_form=%s",
+        ir_number,
+        payload.session_id,
+        bool(latest_submission),
+    )
+    return {
+        "status": "context_loaded",
+        "session_id": payload.session_id,
+        "ir_number": ir_number,
+        "latest_submitted_form": ({
+            "submission_id": latest_submission["submission_id"],
+            "form_title": latest_submission["form_title"],
+            "version_number": latest_submission["version_number"],
+            "submitted_at": latest_submission["submitted_at"],
+        } if latest_submission else None),
+    }

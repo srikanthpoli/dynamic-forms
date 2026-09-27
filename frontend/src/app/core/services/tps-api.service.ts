@@ -25,6 +25,18 @@ export interface TpsIrAssistResponse {
   show_form_tools?: boolean;
 }
 
+export interface TpsIrAssistContextResponse {
+  status: string;
+  session_id: string;
+  ir_number: string;
+  latest_submitted_form: {
+    submission_id: string;
+    form_title: string;
+    version_number?: string | null;
+    submitted_at?: string | null;
+  } | null;
+}
+
 export interface TpsPublishedFormField {
   name?: string;
   label?: string;
@@ -81,10 +93,9 @@ export class TpsApiService {
     return this.http.put<TpsIr>(`${this.baseUrl}/irs/${encodeURIComponent(irNumber)}`, payload);
   }
 
-  loadIrAssistantContext(irNumber: string, sessionId: string, irContext: TpsIr): Observable<{ status: string }> {
-    return this.http.post<{ status: string }>(`${this.baseUrl}/irs/${encodeURIComponent(irNumber)}/assist/context`, {
+  loadIrAssistantContext(irNumber: string, sessionId: string): Observable<TpsIrAssistContextResponse> {
+    return this.http.post<TpsIrAssistContextResponse>(`${this.baseUrl}/irs/${encodeURIComponent(irNumber)}/assist/context`, {
       session_id: sessionId,
-      ir_context: irContext,
     });
   }
 
