@@ -46,7 +46,7 @@ export class FormBuilderPageComponent implements OnInit {
   isDeletingVersion = false;
 
   get showBuilderAgent(): boolean {
-    return !this.currentFormId || this.selectedVersion?.status === 'draft';
+    return !this.currentFormId || !this.selectedVersion || this.selectedVersion.status === 'draft';
   }
 
   ngOnInit(): void {

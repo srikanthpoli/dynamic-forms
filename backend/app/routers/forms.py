@@ -556,11 +556,13 @@ def delete_form_version(form_id: str, version_id: str, db: Session = Depends(get
     if has_assignments:
         raise HTTPException(status_code=409, detail="This version cannot be deleted while it is assigned to an IR")
 
+    was_published = version.status == "published"
     db.delete(version)
     db.commit()
-    try:
-        delete_published_form(version_id)
-    except Exception:
-        logger.exception("Form version deleted but semantic index update failed version_id=%s", version_id)
+    if was_published:
+        try:
+            delete_published_form(version_id)
+        except Exception:
+            logger.exception("Form version deleted but semantic index update failed version_id=%s", version_id)
     logger.info("DELETE /api/forms/%s/versions/%s completed", form_id, version_id)
     return {"status": "deleted", "version_id": version_id}
