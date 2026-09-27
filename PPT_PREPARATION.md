@@ -33,9 +33,9 @@ User -> Angular Frontend -> FastAPI Backend -> AI Agents + PostgreSQL + Chroma V
 
 ### Components
 - Angular frontend: user interface for field building, form building, TPS workflow, and form review.
-- FastAPI backend: exposes API endpoints and coordinates database, AI agents, and workflow logic.
+- FastAPI backend: exposes API endpoints and coordinates database, LangGraph agents, and workflow logic.
 - PostgreSQL: stores field templates, form definitions, form versions, TPS IRs, form assignments, submissions, and events.
-- Chroma vector store: stores searchable context for Angular Material capabilities and published forms.
+- Chroma vector store: retrieves Angular Material capabilities and published form versions; client submission answers are not indexed there.
 - LLM provider: generates structured field/form responses using Grok or another configured provider.
 
 ### Speaker Notes
@@ -91,20 +91,32 @@ This separation keeps the workflow controlled. First, users create and approve i
 ## Slide 5: TPS IR Assist Agent
 
 ### What It Does
-The TPS IR Assist Agent helps users work with a specific TPS implementation request.
+TPS IR Assist helps users ask questions about one TPS implementation request, find suitable published forms, and compare the IR with its latest submitted client form.
 
-### Agent Responsibilities
-- Answers questions using the selected IR context.
-- Searches published forms to find suitable matches.
-- Explains whether a matching form is available.
-- Lists published forms when requested.
-- Helps users decide which form can be assigned to an IR.
+### LangGraph Flow
+1. Classify the user's request: general IR question, published-form request, assignment, or submission comparison.
+2. Retrieve published form candidates only when the request needs them.
+3. Load the latest submitted form from PostgreSQL only for comparison requests.
+4. Send the relevant IR and retrieved context to the LLM for a natural-language answer.
+5. Return an exact published form/version for UI confirmation when the user selects one.
+
+### Form Selection
+- Published versions are indexed with their `form_id`, `version_id`, title, and version number.
+- Selection is resolved against indexed candidates, not an ID invented by the LLM.
+- If multiple versions of a form match and the user did not specify one, the agent asks which version they mean.
+- The UI assigns the exact candidate only after the user confirms.
+
+### Submitted-Form Comparison
+- The agent loads only the newest submission with status `submitted` for the current IR.
+- It passes the IR record and the submission's stored form snapshot and answers to the LLM.
+- The LLM compares by meaning, even when form labels and IR column names differ, then explains the findings in plain text in the chat.
+- Draft and released-but-unsubmitted forms are excluded. Submitted answers are fetched from PostgreSQL and are not added to the shared Chroma index.
 
 ### Important Rule
-It does not invent customer facts, form assignments, submission data, or workflow state. It answers only from the supplied IR context and published form data.
+It must not invent customer facts, submissions, form IDs, or workflow state. It uses DB-loaded IR/submission data and published-form candidates supplied by backend tools. It does not display a generated field-by-field status table.
 
 ### Speaker Notes
-TPS IR Assist acts like a workflow helper. It connects the form system with implementation requests, helping users identify the right published forms for the right customer or onboarding scenario.
+TPS IR Assist is now a routed LangGraph workflow rather than one undifferentiated chat call. Each request activates only the needed retrieval path. For comparisons, the model receives the full latest submitted form snapshot and IR data and responds conversationally; the backend does not force exact field-name matching.
 
 ## Slide 6: How Forms Are Created
 
@@ -153,7 +165,7 @@ The app sends forms by releasing a specific published version into the TPS workf
 - form_versions: draft and published versions of forms.
 - tps_irmain: TPS implementation requests.
 - ir_forms: forms assigned to implementation requests.
-- form_submissions: submitted or draft response data.
+- form_submissions: self-contained form snapshot and draft/submitted response data. IR Assist reads only the latest `submitted` record for a comparison.
 - submission_events: workflow audit history.
 
 ### Speaker Notes
@@ -173,7 +185,8 @@ The database is designed to separate reusable fields, form definitions, publishe
 - Angular Material-compatible rendering.
 - Versioned form publishing.
 - PostgreSQL persistence.
-- Vector search for AI grounding.
+- LangGraph intent routing and tool-based retrieval.
+- Vector search for published forms/capabilities; private submitted answers stay in PostgreSQL.
 - API-driven architecture.
 
 ### Speaker Notes
