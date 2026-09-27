@@ -119,6 +119,7 @@ export class FieldBuilderPageComponent implements OnInit {
         this.error = error?.name === 'TimeoutError'
           ? 'The Field Builder took too long to respond. Check the backend logs and try again.'
           : error?.error?.detail
+            ?? error?.message
             ?? 'The Field Builder could not reach the backend. Check that FastAPI is running on port 8000.';
         this.changeDetector.markForCheck();
       },

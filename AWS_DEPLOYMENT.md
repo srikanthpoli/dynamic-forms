@@ -34,7 +34,7 @@ Do not expose RDS port 5432 publicly. Port 8000 is only for temporary testing an
 ### 2. Connect to EC2 from Windows
 
 ```powershell
-ssh -i "C:\path\to\dynamicforms_aws.pem" ubuntu@YOUR_EC2_PUBLIC_IP
+ssh -i "C:\Users\sripo\Downloads\dynamicforms_aws_2.pem" ubuntu@15.222.242.114
 ```
 
 Use the current EC2 public IP. It can change after stop/start unless an Elastic IP is attached.
@@ -213,7 +213,7 @@ sudo journalctl -u dynamic-forms-api -f
 On Windows PowerShell:
 
 ```powershell
-cd "E:\path\to\Dynamic_Forms\frontend"
+cd "E:\Srikanth\Srikanth\Learning\Dynamic_Forms\frontend\"
 npm install
 npm run build
 ```
@@ -231,20 +231,30 @@ The Angular API configuration uses:
 
 This lets Nginx proxy API calls without exposing port 8000 to browsers.
 
+FastAPI's Swagger UI is available locally on EC2 at:
+
+```text
+http://127.0.0.1:8000/docs
+```
+
+The Nginx routes below expose it publicly at `http://YOUR_EC2_PUBLIC_IP/docs` without exposing port 8000.
+
 ### 10. Upload the frontend
 
 From Windows PowerShell:
 
 ```powershell
-cd "E:\path\to\Dynamic_Forms\frontend"
+cd "E:\Srikanth\Srikanth\Learning\Dynamic_Forms\frontend\"
+npm install
+npm run build
 Compress-Archive `
   -Path ".\dist\dynamic-forms-frontend\browser\*" `
   -DestinationPath ".\dynamic-forms-ui.zip" `
   -Force
 
-scp -i "C:\path\to\dynamicforms_aws.pem" `
+scp -i "C:\Users\sripo\Downloads\dynamicforms_aws_2.pem" `
   ".\dynamic-forms-ui.zip" `
-  ubuntu@YOUR_EC2_PUBLIC_IP:/tmp/dynamic-forms-ui.zip
+  ubuntu@15.222.242.114:/tmp/dynamic-forms-ui.zip
 ```
 
 On EC2:
@@ -277,9 +287,21 @@ server {
     location /api/ {
         proxy_pass http://127.0.0.1:8000/api/;
         proxy_http_version 1.1;
+      proxy_buffering off;
+      proxy_read_timeout 180s;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    location = /docs {
+      proxy_pass http://127.0.0.1:8000/docs;
+      proxy_set_header Host $host;
+    }
+
+    location = /openapi.json {
+      proxy_pass http://127.0.0.1:8000/openapi.json;
+      proxy_set_header Host $host;
     }
 
     location / {
@@ -307,18 +329,25 @@ curl http://127.0.0.1/
 curl http://127.0.0.1/health
 curl http://127.0.0.1/api/fields/
 curl http://127.0.0.1/api/forms/published
+curl -I http://127.0.0.1/docs
 ```
 
 From a browser:
 
 ```text
-http://YOUR_EC2_PUBLIC_IP/
+http://15.222.242.114/
+```
+
+FastAPI Swagger UI through Nginx:
+
+```text
+http://15.222.242.114/docs
 ```
 
 The browser should request:
 
 ```text
-http://YOUR_EC2_PUBLIC_IP/api/fields/
+http://15.222.242.114//api/fields/
 ```
 
 It should not request port 8000 directly.

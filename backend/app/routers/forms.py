@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.agents.form_builder_agent import run_form_builder
 from app.agents.session_store import get_form_session, kill_form_session, save_form_session
-from app.db.models import FieldTemplate, FormDefinition, FormSubmission, FormVersion
+from app.db.models import FieldTemplate, FormDefinition, FormSubmission, FormVersion, IrForm
 from app.db.session import get_db
 from app.schemas.form import (
     FormBuildRequest,
@@ -552,8 +552,9 @@ def delete_form_version(form_id: str, version_id: str, db: Session = Depends(get
     )
     if not version:
         raise HTTPException(status_code=404, detail="Form version not found")
-    if db.query(FormSubmission.id).filter(FormSubmission.version_id == version.id).first():
-        raise HTTPException(status_code=409, detail="This version cannot be deleted because it has submissions")
+    has_assignments = db.query(IrForm.id).filter(IrForm.form_version_id == version.id).first()
+    if has_assignments:
+        raise HTTPException(status_code=409, detail="This version cannot be deleted while it is assigned to an IR")
 
     db.delete(version)
     db.commit()
