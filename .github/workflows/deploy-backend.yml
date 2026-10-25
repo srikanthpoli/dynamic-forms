@@ -1,0 +1,56 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches: [master]
+    paths: ["backend/**"]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-backend
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION || 'ca-central-1' }}
+  STACK_NAME: DynamicFormsStack
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Update backend on instance
+        run: |
+          set -euo pipefail
+          INSTANCE_ID=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" \
+            --query "Stacks[0].Outputs[?OutputKey=='InstanceId'].OutputValue" --output text)
+          SCRIPT=$(cat <<'EOF'
+          set -euo pipefail
+          sudo -iu ubuntu bash -c 'source "$HOME/.local/bin/env" && cd ~/dynamic-forms && git fetch origin master && git reset --hard origin/master && cd backend && uv sync'
+          systemctl restart dynamic-forms-api
+          for i in $(seq 1 20); do
+            curl -fsS http://127.0.0.1:8000/health && exit 0
+            sleep 2
+          done
+          journalctl -u dynamic-forms-api -n 50 --no-pager
+          exit 1
+          EOF
+          )
+          jq -n --arg s "$SCRIPT" '{commands: [$s]}' > "$RUNNER_TEMP/params.json"
+          CMD_ID=$(aws ssm send-command --instance-ids "$INSTANCE_ID" \
+            --document-name AWS-RunShellScript \
+            --parameters "file://$RUNNER_TEMP/params.json" \
+            --query Command.CommandId --output text)
+          status=0
+          aws ssm wait command-executed --command-id "$CMD_ID" --instance-id "$INSTANCE_ID" || status=$?
+          aws ssm get-command-invocation --command-id "$CMD_ID" --instance-id "$INSTANCE_ID" \
+            --query '{Status:Status,Out:StandardOutputContent,Err:StandardErrorContent}' --output yaml
+          exit $status

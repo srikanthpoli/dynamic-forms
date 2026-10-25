@@ -11,6 +11,7 @@ frontend/dynamic-forms-ui.zip
 *accessKeys*.csv
 *credentials*.csv
 .aws/
+dynamic-forms-github-deploy.json
 
 # Python
 .venv/
@@ -37,4 +38,5 @@ backend/certs/
 
 # CDK
 infra/cdk.out/
+infra/cdk.context.json
 infra/cdk-outputs.json

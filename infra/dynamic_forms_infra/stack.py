@@ -2,6 +2,7 @@ import aws_cdk as cdk
 from aws_cdk import aws_ec2 as ec2
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_rds as rds
+from aws_cdk import aws_s3 as s3
 from aws_cdk import aws_secretsmanager as secretsmanager
 from constructs import Construct
 
@@ -167,6 +168,18 @@ class DynamicFormsStack(cdk.Stack):
         database.secret.grant_read(role)
         xai_secret.grant_read(role)
 
+        artifacts = s3.Bucket(
+            self,
+            "Artifacts",
+            bucket_name=f"dynamic-forms-artifacts-{self.account}-{self.region}",
+            block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
+            encryption=s3.BucketEncryption.S3_MANAGED,
+            enforce_ssl=True,
+            removal_policy=cdk.RemovalPolicy.RETAIN,
+            lifecycle_rules=[s3.LifecycleRule(expiration=cdk.Duration.days(30))],
+        )
+        artifacts.grant_read(role)
+
         eip = ec2.CfnEIP(self, "Eip", domain="vpc")
 
         user_data = ec2.UserData.custom(
@@ -203,10 +216,12 @@ class DynamicFormsStack(cdk.Stack):
             require_imdsv2=True,
         )
         instance.node.add_dependency(database)
+        cdk.Tags.of(instance).add("Project", "dynamic-forms")
 
         ec2.CfnEIPAssociation(self, "EipAssoc", allocation_id=eip.attr_allocation_id, instance_id=instance.instance_id)
 
         cdk.CfnOutput(self, "PublicIp", value=eip.ref, description="Set as AWS_EC2_HOST in GitHub secrets")
         cdk.CfnOutput(self, "InstanceId", value=instance.instance_id, description="aws ssm start-session --target <id>")
+        cdk.CfnOutput(self, "ArtifactsBucket", value=artifacts.bucket_name)
         cdk.CfnOutput(self, "DbEndpoint", value=database.db_instance_endpoint_address)
         cdk.CfnOutput(self, "DbSecretArn", value=database.secret.secret_arn)
