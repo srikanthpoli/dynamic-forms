@@ -8,6 +8,9 @@ frontend/dynamic-forms-ui.zip
 *.key
 *.p12
 *.pfx
+*accessKeys*.csv
+*credentials*.csv
+.aws/
 
 # Python
 .venv/
@@ -31,3 +34,7 @@ Thumbs.db
 
 # Local/private backend certificates
 backend/certs/
+
+# CDK
+infra/cdk.out/
+infra/cdk-outputs.json

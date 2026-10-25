@@ -1,0 +1,12 @@
+{
+  "app": "python app.py",
+  "context": {
+    "instance_type": "t3.medium",
+    "volume_size_gb": 30,
+    "repo_url": "https://github.com/srikanthpoli/dynamic-forms.git",
+    "repo_branch": "master",
+    "xai_secret_name": "dynamic-forms/xai-api-key",
+    "ssh_cidr": "",
+    "key_name": ""
+  }
+}

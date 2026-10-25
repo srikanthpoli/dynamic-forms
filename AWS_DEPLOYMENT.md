@@ -34,7 +34,7 @@ Do not expose RDS port 5432 publicly. Port 8000 is only for temporary testing an
 ### 2. Connect to EC2 from Windows
 
 ```powershell
-ssh -i "C:\Users\sripo\Downloads\dynamicforms_aws_2.pem" ubuntu@15.222.242.114
+ssh -i "C:\Users\sripo\Downloads\dynamicforms_aws_2.pem" ubuntu@35.182.9.197
 ```
 
 Use the current EC2 public IP. It can change after stop/start unless an Elastic IP is attached.
@@ -254,7 +254,7 @@ Compress-Archive `
 
 scp -i "C:\Users\sripo\Downloads\dynamicforms_aws_2.pem" `
   ".\dynamic-forms-ui.zip" `
-  ubuntu@15.222.242.114:/tmp/dynamic-forms-ui.zip
+  ubuntu@35.182.9.197:/tmp/dynamic-forms-ui.zip
 ```
 
 On EC2:
@@ -335,19 +335,19 @@ curl -I http://127.0.0.1/docs
 From a browser:
 
 ```text
-http://15.222.242.114/
+http://35.182.9.197/
 ```
 
 FastAPI Swagger UI through Nginx:
 
 ```text
-http://15.222.242.114/docs
+http://35.182.9.197/docs
 ```
 
 The browser should request:
 
 ```text
-http://15.222.242.114//api/fields/
+http://35.182.9.197//api/fields/
 ```
 
 It should not request port 8000 directly.
@@ -421,7 +421,7 @@ It keeps the same running ports and services:
 Add these GitHub repository secrets before running the workflow:
 
 ```text
-AWS_EC2_HOST=18.209.45.74
+AWS_EC2_HOST=35.182.9.197
 AWS_EC2_USER=ubuntu
 AWS_EC2_PORT=22
 AWS_EC2_SSH_KEY=PASTE_PRIVATE_PEM_FILE_CONTENTS
@@ -451,7 +451,7 @@ The backend step syncs the EC2 checkout to `origin/master`. If EC2 has local com
 From Windows PowerShell:
 
 ```powershell
-ssh -i "C:\Users\sripo\Downloads\dynamicforms_aws.pem" ubuntu@18.209.45.74
+ssh -i "C:\Users\sripo\Downloads\dynamicforms_aws_2.pem" ubuntu@35.182.9.197
 ```
 
 #### 2. Refresh backend code only
@@ -507,9 +507,9 @@ Compress-Archive `
   -DestinationPath ".\dynamic-forms-ui.zip" `
   -Force
 
-scp -i "C:\Users\sripo\Downloads\dynamicforms_aws.pem" `
+scp -i "C:\Users\sripo\Downloads\dynamicforms_aws_2.pem" `
   ".\dynamic-forms-ui.zip" `
-  ubuntu@18.209.45.74:/tmp/dynamic-forms-ui.zip
+  ubuntu@35.182.9.197:/tmp/dynamic-forms-ui.zip
 ```
 
 On EC2:
@@ -557,5 +557,5 @@ curl http://127.0.0.1/api/forms/published
 From browser:
 
 ```text
-http://18.209.45.74/
+http://35.182.9.197/
 ```
