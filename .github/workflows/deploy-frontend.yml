@@ -57,7 +57,7 @@ jobs:
         run: |
           set -euo pipefail
           SCRIPT=$(cat <<EOF
-          set -euo pipefail
+          set -eu
           aws s3 cp s3://$BUCKET/frontend/ui.zip /tmp/ui.zip --region $AWS_REGION
           rm -rf /tmp/ui-new && mkdir /tmp/ui-new
           unzip -q /tmp/ui.zip -d /tmp/ui-new
