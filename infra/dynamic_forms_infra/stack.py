@@ -223,5 +223,3 @@ class DynamicFormsStack(cdk.Stack):
         cdk.CfnOutput(self, "PublicIp", value=eip.ref, description="Set as AWS_EC2_HOST in GitHub secrets")
         cdk.CfnOutput(self, "InstanceId", value=instance.instance_id, description="aws ssm start-session --target <id>")
         cdk.CfnOutput(self, "ArtifactsBucket", value=artifacts.bucket_name)
-        cdk.CfnOutput(self, "DbEndpoint", value=database.db_instance_endpoint_address)
-        cdk.CfnOutput(self, "DbSecretArn", value=database.secret.secret_arn)

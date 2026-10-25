@@ -239,6 +239,32 @@ http://127.0.0.1:8000/docs
 
 The Nginx routes below expose it publicly at `http://YOUR_EC2_PUBLIC_IP/docs` without exposing port 8000.
 
+### Run the local backend against AWS RDS
+
+RDS is in private subnets, so do not make it publicly accessible to connect from your laptop. Use an SSM port-forwarding session through the EC2 instance instead. This connects your local app to the same database used by the deployed app, so local writes affect the live data.
+
+Prerequisites: AWS CLI credentials allowed to start an SSM session with the EC2 instance, the Session Manager plugin installed locally, and the RDS endpoint and credentials from the `dynamic-forms/rds-credentials` Secrets Manager secret. Do not paste the password into Git or a shared terminal log.
+
+In a PowerShell terminal, start the tunnel. Replace the instance ID and RDS endpoint with the values for your deployment, and leave this terminal running:
+
+```powershell
+aws ssm start-session `
+  --target "i-INSTANCE_ID" `
+  --document-name AWS-StartPortForwardingSessionToRemoteHost `
+  --parameters '{"host":["RDS_ENDPOINT"],"portNumber":["5432"],"localPortNumber":["15433"]}' `
+  --region ca-central-1
+```
+
+In a second PowerShell terminal, start the backend with the RDS connection URL. Replace the placeholders, URL-encode reserved characters in the password, and keep the tunnel terminal open:
+
+```powershell
+Set-Location "E:\Srikanth\Srikanth\Learning\Dynamic_Forms\backend"
+$env:DATABASE_URL = "postgresql+psycopg2://DB_USER:URL_ENCODED_DB_PASSWORD@127.0.0.1:15433/dynamic_forms"
+python -m uvicorn app.main:app --reload
+```
+
+This temporary environment variable overrides `DATABASE_URL` in `backend/.env` for that terminal only. Other settings, such as the LLM API key, continue to load from `.env`. Stop the local server and tunnel with `Ctrl+C` when finished. Prefer a separate development database for routine work; avoid schema changes or destructive queries against the shared database.
+
 ### 10. Upload the frontend
 
 From Windows PowerShell:

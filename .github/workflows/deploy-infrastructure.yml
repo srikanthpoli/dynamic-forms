@@ -58,8 +58,4 @@ jobs:
 
       - name: Deploy
         if: github.event_name != 'pull_request'
-        run: cdk deploy --require-approval never --outputs-file cdk-outputs.json
-
-      - name: Show outputs
-        if: github.event_name != 'pull_request'
-        run: cat cdk-outputs.json
+        run: cdk deploy --require-approval never

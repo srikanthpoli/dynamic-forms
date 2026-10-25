@@ -34,7 +34,7 @@ jobs:
             --query "Stacks[0].Outputs[?OutputKey=='InstanceId'].OutputValue" --output text)
           SCRIPT=$(cat <<'EOF'
           set -eu
-          sudo -iu ubuntu bash -c 'source "$HOME/.local/bin/env" && cd ~/dynamic-forms && git fetch origin master && git reset --hard origin/master && cd backend && uv sync'
+          sudo -iu ubuntu bash -c 'export PATH="$HOME/.local/bin:$PATH" && cd ~/dynamic-forms && git fetch origin master && git reset --hard origin/master && cd backend && uv sync'
           systemctl restart dynamic-forms-api
           for i in $(seq 1 20); do
             curl -fsS http://127.0.0.1:8000/health && exit 0
