@@ -169,6 +169,33 @@ In **CloudFormation -> DynamicFormsStack -> Outputs**, record `PublicIp` and `In
 
 If the backend is unhealthy, use an SSM session to inspect `/var/log/dynamic-forms-bootstrap.log` and `sudo journalctl -u dynamic-forms-api`. The bootstrap script currently ignores individual migration errors with `|| true`, so inspect the log if database-backed routes fail even when the service starts.
 
+## 8. Point Route 53 to the New Instance
+
+Route 53 is not managed by `DynamicFormsStack`, so destroying the stack leaves your hosted zone and DNS records in place. The old A record will still point at the released Elastic IP until you update it.
+
+1. In **CloudFormation -> DynamicFormsStack -> Outputs**, copy the new `PublicIp` value.
+2. Open **Route 53 -> Hosted zones** and select the hosted zone for your domain.
+3. Edit the existing A record for the root domain or app subdomain (for example, `example.com` or `forms.example.com`) and replace its IPv4 value with the new `PublicIp`. Do not create a duplicate record with the same name and type.
+4. If the record does not exist, create a regular A record pointing to the new `PublicIp`. An EC2 Elastic IP is not a Route 53 alias target.
+5. Save the record and allow for DNS caching/propagation before testing `http://YOUR_DOMAIN/` and `http://YOUR_DOMAIN/docs`.
+
+The old instance's Certbot certificate and Nginx TLS configuration were stored on its disk and are not restored by this deploy. After the Route 53 record resolves to the new IP and ports 80/443 are reachable, open **AWS Systems Manager -> Session Manager**, start a session to the new EC2 instance, and run:
+
+```bash
+sudo apt update
+sudo apt install -y certbot python3-certbot-nginx
+sudo certbot --nginx --redirect -d dynamicforms.buildwithsri.com
+```
+
+Follow Certbot's prompts and provide an email address for expiration notices. It will update Nginx to serve HTTPS and redirect HTTP to HTTPS. Verify:
+
+```bash
+sudo certbot renew --dry-run
+sudo systemctl status certbot.timer
+```
+
+Then test `https://dynamicforms.buildwithsri.com/` and `https://dynamicforms.buildwithsri.com/docs`. The stack security group already permits inbound ports 80 and 443. This certificate step is needed after a full instance replacement, not after ordinary backend-only deployments.
+
 ## Recovery and Cost Notes
 
 - To preserve the old data, stop before destroying the stack or explicitly restore the final snapshot into a new RDS instance and update the infrastructure/application configuration to use it. A normal fresh deploy creates an empty database.
